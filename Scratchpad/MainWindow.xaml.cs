@@ -219,6 +219,21 @@ namespace Scratchpad
                 Topmost = AlwaysOnTopToggleButton.IsChecked == true;
                 e.Handled = true;
             }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && (e.Key == Key.OemPlus || e.Key == Key.Add))
+            {
+                AdjustFontSize(1);
+                e.Handled = true;
+            }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && (e.Key == Key.OemMinus || e.Key == Key.Subtract))
+            {
+                AdjustFontSize(-1);
+                e.Handled = true;
+            }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && (e.Key == Key.D0 || e.Key == Key.NumPad0))
+            {
+                ResetFontSize();
+                e.Handled = true;
+            }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
