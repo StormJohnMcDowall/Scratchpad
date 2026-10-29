@@ -13,6 +13,7 @@
             <Border Width="1" Margin="4,6" Background="#FFBEBEBE" />
             <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
             <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
+            <Button x:Name="SettingsButton" Content="Settings" Click="SettingsButton_Click" Padding="8,4" Margin="2,4" Focusable="False" />
         </StackPanel>
         <Grid>
             <TextBox x:Name="EditorTextBox"
@@ -20,7 +21,6 @@
                      AcceptsTab="True"
                      TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
-                     FontFamily="Consolas"
                      TextChanged="EditorTextBox_TextChanged" />
             <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed">
                 <markdig:MarkdownViewer x:Name="PreviewViewer" />

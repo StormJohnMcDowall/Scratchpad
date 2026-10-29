@@ -17,6 +17,8 @@ namespace Scratchpad
         private readonly WindowPlacementStore _placementStore = new WindowPlacementStore(WindowPlacementStore.DefaultFilePath);
         private readonly FontSizeStore _fontSizeStore = new FontSizeStore(FontSizeStore.DefaultFilePath);
         private FontSizeSettings _fontSizeSettings;
+        private readonly FontFamilyStore _fontFamilyStore = new FontFamilyStore(FontFamilyStore.DefaultFilePath);
+        private FontFamilySettings _fontFamilySettings;
         private readonly DebouncedAutosaveCoordinator _autosave;
         private bool _isExiting;
 
@@ -35,6 +37,33 @@ namespace Scratchpad
             // instead of silently overwriting a custom size with FontSizing.Default.
             _fontSizeSettings = _fontSizeStore.Load();
             ApplyEditorFontSize();
+
+            // Same reasoning as font size above: loaded in the constructor, not Window_Loaded,
+            // and validated against what's actually installed since FontFamilyStore.Load() (in
+            // Scratchpad.Core, with no font API) can only guarantee non-empty strings, not that
+            // the named font still exists on this machine.
+            _fontFamilySettings = ValidateAgainstInstalledFonts(_fontFamilyStore.Load());
+            ApplyEditorFontFamily();
+        }
+
+        private static FontFamilySettings ValidateAgainstInstalledFonts(FontFamilySettings settings)
+        {
+            var editorFontFamily = FontCatalog.MonospaceFamilies.Any(f => f.Source == settings.EditorFontFamily)
+                ? settings.EditorFontFamily
+                : FontFamilyStore.DefaultEditorFontFamily;
+            var previewNormalFontFamily = FontCatalog.NormalTextFamilies.Any(f => f.Source == settings.PreviewNormalFontFamily)
+                ? settings.PreviewNormalFontFamily
+                : null;
+            var previewCodeFontFamily = FontCatalog.MonospaceFamilies.Any(f => f.Source == settings.PreviewCodeFontFamily)
+                ? settings.PreviewCodeFontFamily
+                : null;
+
+            return new FontFamilySettings
+            {
+                EditorFontFamily = editorFontFamily,
+                PreviewNormalFontFamily = previewNormalFontFamily,
+                PreviewCodeFontFamily = previewCodeFontFamily
+            };
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -105,6 +134,7 @@ namespace Scratchpad
         {
             PreviewViewer.Markdown = EditorTextBox.Text;
             ApplyPreviewFontSize();
+            ApplyPreviewFonts();
             WireTaskListCheckBoxes();
         }
 
@@ -142,6 +172,87 @@ namespace Scratchpad
 
         private void ZoomOutButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(-1);
         private void ZoomInButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(1);
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsWindow = new SettingsWindow(_fontFamilySettings, FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
+            settingsWindow.SettingsChanged += OnFontFamilySettingsChanged;
+            settingsWindow.Show();
+        }
+
+        private void OnFontFamilySettingsChanged(FontFamilySettings settings)
+        {
+            _fontFamilySettings = settings;
+            ApplyEditorFontFamily();
+            if (PreviewToggleButton.IsChecked == true)
+            {
+                ApplyPreviewFonts();
+            }
+            _fontFamilyStore.Save(_fontFamilySettings);
+        }
+
+        private void ApplyEditorFontFamily()
+        {
+            EditorTextBox.FontFamily = new FontFamily(_fontFamilySettings.EditorFontFamily);
+        }
+
+        private void ApplyPreviewFonts()
+        {
+            if (PreviewViewer.Document == null)
+            {
+                return;
+            }
+
+            ApplyPreviewFonts(PreviewViewer.Document.Blocks);
+        }
+
+        // A null Preview*FontFamily means "no override" — leave that element's FontFamily
+        // untouched, so Markdig.Wpf's own default renders exactly as it does for anyone who's
+        // never opened Settings. Mirrors FindTaskListCheckBoxes's recursion shape rather than
+        // inventing a new tree-walk pattern. Style-reference comparison (not a resource-override
+        // mechanism) is used purely to classify each element — stamping FontFamily as a local
+        // value always wins regardless of what Markdig.Wpf's own styles do internally, sidestepping
+        // any need to know their exact TargetType, which this sandbox has no way to verify.
+        private void ApplyPreviewFonts(IEnumerable<Block> blocks)
+        {
+            var codeBlockStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeBlockStyleKey) as Style;
+            var codeStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeStyleKey) as Style;
+
+            foreach (var block in blocks)
+            {
+                if (block is Paragraph paragraph)
+                {
+                    var isCodeBlock = codeBlockStyle != null && ReferenceEquals(paragraph.Style, codeBlockStyle);
+                    var paragraphFontFamily = isCodeBlock ? _fontFamilySettings.PreviewCodeFontFamily : _fontFamilySettings.PreviewNormalFontFamily;
+                    if (paragraphFontFamily != null)
+                    {
+                        paragraph.FontFamily = new FontFamily(paragraphFontFamily);
+                    }
+
+                    if (!isCodeBlock && _fontFamilySettings.PreviewCodeFontFamily != null && codeStyle != null)
+                    {
+                        foreach (var run in paragraph.Inlines.OfType<Run>())
+                        {
+                            if (ReferenceEquals(run.Style, codeStyle))
+                            {
+                                run.FontFamily = new FontFamily(_fontFamilySettings.PreviewCodeFontFamily);
+                            }
+                        }
+                    }
+                }
+                else if (block is Section section)
+                {
+                    ApplyPreviewFonts(section.Blocks);
+                }
+                else if (block is List list)
+                {
+                    foreach (var item in list.ListItems)
+                    {
+                        ApplyPreviewFonts(item.Blocks);
+                    }
+                }
+            }
+        }
 
         private void ApplyEditorFontSize()
         {
