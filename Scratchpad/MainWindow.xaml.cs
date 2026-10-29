@@ -15,6 +15,16 @@ namespace Scratchpad
     {
         private readonly DocumentStore _documentStore = new DocumentStore(DocumentStore.DefaultFilePath);
         private readonly WindowPlacementStore _placementStore = new WindowPlacementStore(WindowPlacementStore.DefaultFilePath);
+        private readonly FontSizeStore _fontSizeStore = new FontSizeStore(FontSizeStore.DefaultFilePath);
+        // Initialized to real defaults (not the struct's zero-value) so that if the window is
+        // closed without ever being shown — e.g. exited from the tray before Window_Loaded ever
+        // runs — Closing still persists usable sizes instead of 0pt fonts. Same bug class as the
+        // NaN guard on window placement.
+        private FontSizeSettings _fontSizeSettings = new FontSizeSettings
+        {
+            EditorFontSize = FontSizing.Default,
+            PreviewFontSize = FontSizing.Default
+        };
         private readonly DebouncedAutosaveCoordinator _autosave;
         private bool _isExiting;
 
@@ -30,6 +40,9 @@ namespace Scratchpad
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             EditorTextBox.Text = _documentStore.Load();
+
+            _fontSizeSettings = _fontSizeStore.Load();
+            EditorTextBox.FontSize = _fontSizeSettings.EditorFontSize;
 
             var requested = _placementStore.Load();
             var clamped = WindowPlacement.Clamp(requested, GetScreenBoundsInDeviceIndependentUnits());
@@ -94,8 +107,44 @@ namespace Scratchpad
         private void RenderPreview()
         {
             PreviewViewer.Markdown = EditorTextBox.Text;
+            PreviewViewer.Document.FontSize = _fontSizeSettings.PreviewFontSize;
             WireTaskListCheckBoxes();
         }
+
+        private void AdjustFontSize(int direction)
+        {
+            if (PreviewToggleButton.IsChecked == true)
+            {
+                _fontSizeSettings.PreviewFontSize = direction > 0
+                    ? FontSizing.Increase(_fontSizeSettings.PreviewFontSize)
+                    : FontSizing.Decrease(_fontSizeSettings.PreviewFontSize);
+                PreviewViewer.Document.FontSize = _fontSizeSettings.PreviewFontSize;
+            }
+            else
+            {
+                _fontSizeSettings.EditorFontSize = direction > 0
+                    ? FontSizing.Increase(_fontSizeSettings.EditorFontSize)
+                    : FontSizing.Decrease(_fontSizeSettings.EditorFontSize);
+                EditorTextBox.FontSize = _fontSizeSettings.EditorFontSize;
+            }
+        }
+
+        private void ResetFontSize()
+        {
+            if (PreviewToggleButton.IsChecked == true)
+            {
+                _fontSizeSettings.PreviewFontSize = FontSizing.Default;
+                PreviewViewer.Document.FontSize = FontSizing.Default;
+            }
+            else
+            {
+                _fontSizeSettings.EditorFontSize = FontSizing.Default;
+                EditorTextBox.FontSize = FontSizing.Default;
+            }
+        }
+
+        private void ZoomOutButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(-1);
+        private void ZoomInButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(1);
 
         // Markdig.Wpf renders task-list items as real (but disabled) CheckBox controls — this
         // enables them and wires each one, by its position among all checkboxes in document
@@ -201,6 +250,10 @@ namespace Scratchpad
                     };
                 _placementStore.Save(bounds);
             }
+
+            // No NaN-style guard needed here, unlike window placement: _fontSizeSettings only
+            // ever holds values produced by FontSizing's clamped operations or its own Default.
+            _fontSizeStore.Save(_fontSizeSettings);
 
             if (!_isExiting)
             {

@@ -9,6 +9,9 @@
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
             <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />
             <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Always on Top" Click="AlwaysOnTopToggleButton_Click" Padding="8,4" Margin="4" />
+            <Border Width="1" Margin="4,6" Background="#FFBEBEBE" />
+            <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" />
+            <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" />
         </StackPanel>
         <Grid>
             <TextBox x:Name="EditorTextBox"
