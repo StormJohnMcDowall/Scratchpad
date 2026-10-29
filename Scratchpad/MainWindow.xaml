@@ -3,14 +3,60 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         Title="Scratchpad" Width="420" Height="520"
+        Background="{StaticResource PostItBackgroundBrush}"
         Loaded="Window_Loaded" Closing="Window_Closing"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewMouseWheel="Window_PreviewMouseWheel">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PostItBackgroundBrush" Color="#FFF3A3" />
+        <SolidColorBrush x:Key="PostItToolbarBrush" Color="#FDEE8C" />
+        <SolidColorBrush x:Key="PostItBorderBrush" Color="#E6D978" />
+        <SolidColorBrush x:Key="PostItButtonBrush" Color="#FFE066" />
+        <SolidColorBrush x:Key="PostItButtonHoverBrush" Color="#FFD633" />
+        <SolidColorBrush x:Key="PostItButtonPressedBrush" Color="#F0C419" />
+        <SolidColorBrush x:Key="PostItTextBrush" Color="#5C4F1A" />
+
+        <Style x:Key="PostItButtonBaseStyle" TargetType="{x:Type ButtonBase}">
+            <Setter Property="Background" Value="{StaticResource PostItButtonBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PostItBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{StaticResource PostItTextBrush}" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ButtonBase}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PostItButtonHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PostItButtonPressedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PostItButtonBaseStyle}" />
+        <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PostItButtonBaseStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="{StaticResource PostItButtonPressedBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
     <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Background="{StaticResource PostItToolbarBrush}">
             <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />
             <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Always on Top" Click="AlwaysOnTopToggleButton_Click" Padding="8,4" Margin="4" />
-            <Border Width="1" Margin="4,6" Background="#FFBEBEBE" />
+            <Border Width="1" Margin="4,6" Background="{StaticResource PostItBorderBrush}" />
             <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
             <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
             <Button x:Name="SettingsButton" Content="Settings" Click="SettingsButton_Click" Padding="8,4" Margin="2,4" Focusable="False" />
@@ -21,8 +67,11 @@
                      AcceptsTab="True"
                      TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
+                     Background="{StaticResource PostItBackgroundBrush}"
+                     Foreground="{StaticResource PostItTextBrush}"
+                     BorderThickness="0"
                      TextChanged="EditorTextBox_TextChanged" />
-            <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed">
+            <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed" Background="{StaticResource PostItBackgroundBrush}">
                 <markdig:MarkdownViewer x:Name="PreviewViewer" />
             </ScrollViewer>
         </Grid>

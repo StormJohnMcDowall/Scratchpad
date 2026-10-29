@@ -145,7 +145,22 @@ namespace Scratchpad
             PreviewViewer.Markdown = EditorTextBox.Text;
             ApplyPreviewFontSize();
             ApplyPreviewFonts();
+            ApplyPreviewBackground();
             WireTaskListCheckBoxes();
+        }
+
+        // Markdig.Wpf creates a fresh FlowDocument on every Markdown assignment (the same reason
+        // ApplyPreviewFontSize/ApplyPreviewFonts already exist as post-render steps) — the
+        // ScrollViewer's own Background alone isn't visible if that FlowDocument paints its own
+        // opaque background on top.
+        private void ApplyPreviewBackground()
+        {
+            if (PreviewViewer.Document == null)
+            {
+                return;
+            }
+
+            PreviewViewer.Document.Background = (Brush)FindResource("PostItBackgroundBrush");
         }
 
         private void AdjustFontSize(int direction)
