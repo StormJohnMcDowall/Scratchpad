@@ -1,0 +1,10 @@
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/bin/Debug/netstandard2.0/Scratchpad.Core.deps.json
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/bin/Debug/netstandard2.0/Scratchpad.Core.dll
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/bin/Debug/netstandard2.0/Scratchpad.Core.pdb
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/obj/Debug/netstandard2.0/Scratchpad.Core.csproj.AssemblyReference.cache
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/obj/Debug/netstandard2.0/Scratchpad.Core.GeneratedMSBuildEditorConfig.editorconfig
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/obj/Debug/netstandard2.0/Scratchpad.Core.AssemblyInfoInputs.cache
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/obj/Debug/netstandard2.0/Scratchpad.Core.AssemblyInfo.cs
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/obj/Debug/netstandard2.0/Scratchpad.Core.csproj.CoreCompileInputs.cache
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/obj/Debug/netstandard2.0/Scratchpad.Core.dll
+/c/code/jmcd/Scratchpad/.claude/worktrees/scratchpad-impl/Scratchpad.Core/obj/Debug/netstandard2.0/Scratchpad.Core.pdb
