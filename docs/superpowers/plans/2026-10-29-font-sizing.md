@@ -289,6 +289,8 @@ Expected: Build succeeded, 0 errors.
 - Click `+`/`-` in preview mode — only the preview resizes; toggle back to editor — its size is unchanged from before.
 - Close and relaunch the app — both sizes are restored as left.
 - Edit `%LOCALAPPDATA%\Scratchpad\font-size.json` to contain an invalid value (e.g. `0` or garbage text) and relaunch — the app starts normally at a sane size instead of crashing.
+- Set a non-default size, exit the app, relaunch, then **exit from the tray menu without ever opening the window**, relaunch again and open it — the custom size must still be there, not reset to default (added after final review caught this as a data-loss bug — see `.superpowers/sdd/2026-10-29-font-sizing/progress.md`).
+- Zoom the preview on a note containing `#`/`##` headings and a task list — headings, body text, and checkbox glyphs should all scale together, not just body text (added after final review).
 
 - [ ] **Step 5: Commit**
 

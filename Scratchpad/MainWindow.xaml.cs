@@ -16,15 +16,7 @@ namespace Scratchpad
         private readonly DocumentStore _documentStore = new DocumentStore(DocumentStore.DefaultFilePath);
         private readonly WindowPlacementStore _placementStore = new WindowPlacementStore(WindowPlacementStore.DefaultFilePath);
         private readonly FontSizeStore _fontSizeStore = new FontSizeStore(FontSizeStore.DefaultFilePath);
-        // Initialized to real defaults (not the struct's zero-value) so that if the window is
-        // closed without ever being shown — e.g. exited from the tray before Window_Loaded ever
-        // runs — Closing still persists usable sizes instead of 0pt fonts. Same bug class as the
-        // NaN guard on window placement.
-        private FontSizeSettings _fontSizeSettings = new FontSizeSettings
-        {
-            EditorFontSize = FontSizing.Default,
-            PreviewFontSize = FontSizing.Default
-        };
+        private FontSizeSettings _fontSizeSettings;
         private readonly DebouncedAutosaveCoordinator _autosave;
         private bool _isExiting;
 
@@ -35,14 +27,19 @@ namespace Scratchpad
             // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
             // between what's rendered here and what gets toggled there.
             PreviewViewer.Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
+
+            // Loaded here, not in Window_Loaded: this app always starts hidden in the tray
+            // (App.xaml.cs never calls Show()), so Window_Loaded never runs on the common
+            // exit-without-opening path. Loading in the constructor means _fontSizeSettings
+            // always reflects the persisted value by the time Window_Closing saves it back,
+            // instead of silently overwriting a custom size with FontSizing.Default.
+            _fontSizeSettings = _fontSizeStore.Load();
+            ApplyEditorFontSize();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             EditorTextBox.Text = _documentStore.Load();
-
-            _fontSizeSettings = _fontSizeStore.Load();
-            EditorTextBox.FontSize = _fontSizeSettings.EditorFontSize;
 
             var requested = _placementStore.Load();
             var clamped = WindowPlacement.Clamp(requested, GetScreenBoundsInDeviceIndependentUnits());
@@ -107,7 +104,7 @@ namespace Scratchpad
         private void RenderPreview()
         {
             PreviewViewer.Markdown = EditorTextBox.Text;
-            PreviewViewer.Document.FontSize = _fontSizeSettings.PreviewFontSize;
+            ApplyPreviewFontSize();
             WireTaskListCheckBoxes();
         }
 
@@ -118,14 +115,14 @@ namespace Scratchpad
                 _fontSizeSettings.PreviewFontSize = direction > 0
                     ? FontSizing.Increase(_fontSizeSettings.PreviewFontSize)
                     : FontSizing.Decrease(_fontSizeSettings.PreviewFontSize);
-                PreviewViewer.Document.FontSize = _fontSizeSettings.PreviewFontSize;
+                ApplyPreviewFontSize();
             }
             else
             {
                 _fontSizeSettings.EditorFontSize = direction > 0
                     ? FontSizing.Increase(_fontSizeSettings.EditorFontSize)
                     : FontSizing.Decrease(_fontSizeSettings.EditorFontSize);
-                EditorTextBox.FontSize = _fontSizeSettings.EditorFontSize;
+                ApplyEditorFontSize();
             }
         }
 
@@ -134,17 +131,33 @@ namespace Scratchpad
             if (PreviewToggleButton.IsChecked == true)
             {
                 _fontSizeSettings.PreviewFontSize = FontSizing.Default;
-                PreviewViewer.Document.FontSize = FontSizing.Default;
+                ApplyPreviewFontSize();
             }
             else
             {
                 _fontSizeSettings.EditorFontSize = FontSizing.Default;
-                EditorTextBox.FontSize = FontSizing.Default;
+                ApplyEditorFontSize();
             }
         }
 
         private void ZoomOutButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(-1);
         private void ZoomInButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(1);
+
+        private void ApplyEditorFontSize()
+        {
+            EditorTextBox.FontSize = _fontSizeSettings.EditorFontSize;
+        }
+
+        // Markdig.Wpf's default styles set absolute FontSize values on heading paragraphs
+        // (h1-h4), which override property-value inheritance — so setting Document.FontSize
+        // scales body text but leaves headings (and checkbox glyphs) frozen. A LayoutTransform
+        // scales the whole rendered visual tree uniformly instead, and still reflows to the
+        // window width since LayoutTransform (unlike RenderTransform) re-measures.
+        private void ApplyPreviewFontSize()
+        {
+            var scale = _fontSizeSettings.PreviewFontSize / FontSizing.Default;
+            PreviewViewer.LayoutTransform = new ScaleTransform(scale, scale);
+        }
 
         // Markdig.Wpf renders task-list items as real (but disabled) CheckBox controls — this
         // enables them and wires each one, by its position among all checkboxes in document
@@ -219,8 +232,12 @@ namespace Scratchpad
                 Topmost = AlwaysOnTopToggleButton.IsChecked == true;
                 e.Handled = true;
             }
-            else if (Keyboard.Modifiers == ModifierKeys.Control && (e.Key == Key.OemPlus || e.Key == Key.Add))
+            else if ((Keyboard.Modifiers & ~ModifierKeys.Shift) == ModifierKeys.Control
+                && (e.Key == Key.OemPlus || e.Key == Key.Add))
             {
+                // '+' is Shift+OemPlus on standard keyboards, so "Ctrl and the + key" is
+                // physically Ctrl+Shift+OemPlus — Shift is allowed here (unlike the other
+                // branches) so that gesture, and plain Ctrl+OemPlus (the '=' key), both work.
                 AdjustFontSize(1);
                 e.Handled = true;
             }
