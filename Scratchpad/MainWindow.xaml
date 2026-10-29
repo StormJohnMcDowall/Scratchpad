@@ -4,7 +4,8 @@
         xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         Title="Scratchpad" Width="420" Height="520"
         Loaded="Window_Loaded" Closing="Window_Closing"
-        PreviewKeyDown="Window_PreviewKeyDown">
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewMouseWheel="Window_PreviewMouseWheel">
     <DockPanel>
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
             <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />

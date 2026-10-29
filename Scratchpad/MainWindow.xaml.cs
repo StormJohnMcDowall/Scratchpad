@@ -236,6 +236,15 @@ namespace Scratchpad
             }
         }
 
+        private void Window_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                AdjustFontSize(Math.Sign(e.Delta));
+                e.Handled = true;
+            }
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // Publish any edit still waiting out its debounce delay — otherwise up to 500ms of
