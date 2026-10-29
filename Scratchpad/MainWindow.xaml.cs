@@ -198,6 +198,19 @@ namespace Scratchpad
         private void ZoomOutButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(-1);
         private void ZoomInButton_Click(object sender, RoutedEventArgs e) => AdjustFontSize(1);
 
+        // Wired to the bubbling MouseLeftButtonDown, not PreviewMouseLeftButtonDown — a click on
+        // any toolbar button is marked Handled by that button's own click-handling before the
+        // event reaches this Grid, so this only ever fires for clicks on genuinely empty space.
+        private void Toolbar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DragMove();
+        }
+
+        private void HideButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
             var settingsWindow = new SettingsWindow(_fontFamilySettings, FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);

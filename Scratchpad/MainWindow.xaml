@@ -2,11 +2,16 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Scratchpad" Width="420" Height="520"
         Background="{StaticResource PostItBackgroundBrush}"
+        WindowStyle="None"
         Loaded="Window_Loaded" Closing="Window_Closing"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewMouseWheel="Window_PreviewMouseWheel">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
     <Window.Resources>
         <SolidColorBrush x:Key="PostItBackgroundBrush" Color="#FFF3A3" />
         <SolidColorBrush x:Key="PostItToolbarBrush" Color="#FDEE8C" />
@@ -53,14 +58,22 @@
         </Style>
     </Window.Resources>
     <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Background="{StaticResource PostItToolbarBrush}">
-            <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />
-            <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Always on Top" Click="AlwaysOnTopToggleButton_Click" Padding="8,4" Margin="4" />
-            <Border Width="1" Margin="4,6" Background="{StaticResource PostItBorderBrush}" />
-            <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
-            <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
-            <Button x:Name="SettingsButton" Content="Settings" Click="SettingsButton_Click" Padding="8,4" Margin="2,4" Focusable="False" />
-        </StackPanel>
+        <Grid DockPanel.Dock="Top" Background="{StaticResource PostItToolbarBrush}" MouseLeftButtonDown="Toolbar_MouseLeftButtonDown">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />
+                <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Always on Top" Click="AlwaysOnTopToggleButton_Click" Padding="8,4" Margin="4" />
+                <Border Width="1" Margin="4,6" Background="{StaticResource PostItBorderBrush}" />
+                <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
+                <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
+                <Button x:Name="SettingsButton" Content="Settings" Click="SettingsButton_Click" Padding="8,4" Margin="2,4" Focusable="False" />
+            </StackPanel>
+            <Button x:Name="HideButton" Grid.Column="2" Content="X" Click="HideButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
+        </Grid>
         <Grid>
             <TextBox x:Name="EditorTextBox"
                      AcceptsReturn="True"
