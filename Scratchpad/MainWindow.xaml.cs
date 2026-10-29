@@ -203,7 +203,28 @@ namespace Scratchpad
         // event reaches this Grid, so this only ever fires for clicks on genuinely empty space.
         private void Toolbar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // DragMove() throws if the left button is no longer down by the time this handler
+            // runs (capture races, double-click sequences, injected input) — guard rather than
+            // trust the event always reflects the button's current state.
+            if (e.ButtonState != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
             DragMove();
+        }
+
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            // DragMove() enters the OS's native move loop, which still implements Aero Snap even
+            // with the native title bar gone — dragging to a screen edge can maximize the window.
+            // With no restore control in this custom chrome (no maximize button, and DragMove()
+            // itself no-ops while maximized), that would be a dead end with no way back except
+            // the taskbar icon's right-click menu or quitting.
+            if (WindowState == WindowState.Maximized)
+            {
+                WindowState = WindowState.Normal;
+            }
         }
 
         private void HideButton_Click(object sender, RoutedEventArgs e)

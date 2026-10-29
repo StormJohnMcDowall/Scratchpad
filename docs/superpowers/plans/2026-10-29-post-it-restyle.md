@@ -91,7 +91,7 @@
 
 - [ ] **Step 2: Apply the palette to the window chrome and panels**
 
-On the `Window` element, add `Background="{StaticResource PostItBackgroundBrush}"`. On the toolbar `StackPanel`, add `Background="{StaticResource PostItToolbarBrush}"`. Change the divider `Border`'s `Background` from `#FFBEBEBE` to `{StaticResource PostItBorderBrush}`.
+On the `Window` element, add `Background="{DynamicResource PostItBackgroundBrush}"` — **`DynamicResource`, not `StaticResource`, here specifically**: an attribute on the `Window`'s own start tag is applied before its `Window.Resources` property element is parsed, so a `StaticResource` reference to a brush defined in that same dictionary is a forward reference that throws `XamlParseException` out of `InitializeComponent()` on every launch (confirmed by a final review of this plan's first implementation, via the compiled BAML's record ordering). `DynamicResource` defers the lookup until the value is actually needed, after the whole tree — `Window.Resources` included — has loaded, which is the standard fix for this exact ordering problem. Every other `StaticResource` reference in this file is fine, since it's either later in the same dictionary or in content parsed after `Window.Resources` closes — this is the one place order bites. On the toolbar `StackPanel`, add `Background="{StaticResource PostItToolbarBrush}"`. Change the divider `Border`'s `Background` from `#FFBEBEBE` to `{StaticResource PostItBorderBrush}`.
 
 - [ ] **Step 3: Restyle the editor and preview surfaces**
 
@@ -122,7 +122,8 @@ Expected: Build succeeded, 0 errors.
 
 - [ ] **Step 6: Manually verify, on the target Windows machine**
 
-- Launch the app: the toolbar, its buttons, and the editor are all the pale-yellow palette — not just the editor text area.
+- Launch the app and confirm it actually starts (no crash dialog) before checking anything else — see Step 2's `DynamicResource` note for why this specifically needs confirming here, not assuming from a successful build.
+- The toolbar, its buttons, and the editor are all the pale-yellow palette — not just the editor text area.
 - Click `Preview`/`Always on Top`: each toggle still visibly shows a distinct checked/pressed state, not just a flat unchanging button.
 - Hover and click any button: hover and pressed states are visibly distinct from the resting color.
 - Toggle to Preview mode: the rendered preview's background is the same pale yellow as the editor, with no leftover white rectangle showing through from Markdig.Wpf's own default. If it does show through, that confirms Step 4's `ApplyPreviewBackground()` is load-bearing (it should already fix it) — if it still doesn't, this needs further investigation before Task 2.
@@ -200,9 +201,11 @@ Expected: Build succeeded, 0 errors.
 
 - [ ] **Step 5: Manually verify, on the target Windows machine**
 
+- Launch the app and confirm it actually starts — no crash dialog. This sounds trivial, but a final review of this plan's first implementation found a `Window.Background` forward-reference that crashed `InitializeComponent()` on every launch (see Step 1's `DynamicResource` note); nothing short of actually running the app would have caught it.
 - Launch the app: no native title bar is visible at all (no Windows-drawn minimize/maximize/close buttons, no Windows-drawn title text).
 - Click and drag empty toolbar space (not a button): the window moves, the same as dragging a native title bar.
 - Click any toolbar button (`Preview`, `Always on Top`, zoom, `Settings`): it activates normally and does **not** also start dragging the window.
+- Drag the window to the top edge of the screen and release: confirm it does **not** maximize and get stuck there (Aero Snap still runs inside `DragMove()`'s native move loop even with no native title bar; `Window_StateChanged` forces it back to `Normal` if it does).
 - Click the new hide button: the window hides to the tray — confirm from the tray icon's "Show" (or double-click) that it reappears with its content intact, exactly like today's native X button.
 - Drag an edge or corner of the window: it resizes, the same as with the native border.
 - Type in the editor, click the hide button, then a toolbar button, then drag the window — confirm keyboard focus in the editor is never unexpectedly lost by any of these interactions.
