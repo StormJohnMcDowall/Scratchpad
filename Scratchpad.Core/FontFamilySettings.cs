@@ -8,6 +8,16 @@ namespace Scratchpad.Core
         public string PreviewNormalFontFamily { get; set; }
         public string PreviewCodeFontFamily { get; set; }
 
+        // True when nothing has been configured away from the out-of-the-box look — lets a
+        // caller skip work (e.g. enumerating every installed font) that only matters once a
+        // non-default choice exists.
+        public bool IsDefault()
+        {
+            return EditorFontFamily == FontFamilyStore.DefaultEditorFontFamily
+                && PreviewNormalFontFamily == null
+                && PreviewCodeFontFamily == null;
+        }
+
         public bool Equals(FontFamilySettings other)
         {
             return string.Equals(EditorFontFamily, other.EditorFontFamily, StringComparison.Ordinal)

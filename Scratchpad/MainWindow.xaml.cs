@@ -48,6 +48,16 @@ namespace Scratchpad
 
         private static FontFamilySettings ValidateAgainstInstalledFonts(FontFamilySettings settings)
         {
+            // Enumerating every installed font (FontCatalog's first touch) resolves a
+            // GlyphTypeface per family and is slow on a machine with a large font set. Skipping
+            // it whenever nothing has been configured away from the defaults keeps that cost out
+            // of the overwhelmingly common startup path — notably ahead of the single-instance
+            // listener in App.xaml.cs, which a slow constructor would otherwise delay.
+            if (settings.IsDefault())
+            {
+                return settings;
+            }
+
             var editorFontFamily = FontCatalog.MonospaceFamilies.Any(f => f.Source == settings.EditorFontFamily)
                 ? settings.EditorFontFamily
                 : FontFamilyStore.DefaultEditorFontFamily;
@@ -193,7 +203,13 @@ namespace Scratchpad
 
         private void ApplyEditorFontFamily()
         {
-            EditorTextBox.FontFamily = new FontFamily(_fontFamilySettings.EditorFontFamily);
+            // The Settings window can hand back a null EditorFontFamily (its combo box opens
+            // with no selection whenever the loaded/validated value isn't in FontCatalog's own
+            // list), and new FontFamily(null) throws — guard here rather than trust every caller.
+            var fontFamily = string.IsNullOrEmpty(_fontFamilySettings.EditorFontFamily)
+                ? FontFamilyStore.DefaultEditorFontFamily
+                : _fontFamilySettings.EditorFontFamily;
+            EditorTextBox.FontFamily = new FontFamily(fontFamily);
         }
 
         private void ApplyPreviewFonts()
@@ -231,7 +247,7 @@ namespace Scratchpad
 
                     if (!isCodeBlock && _fontFamilySettings.PreviewCodeFontFamily != null && codeStyle != null)
                     {
-                        foreach (var run in paragraph.Inlines.OfType<Run>())
+                        foreach (var run in FindRuns(paragraph.Inlines))
                         {
                             if (ReferenceEquals(run.Style, codeStyle))
                             {
@@ -249,6 +265,28 @@ namespace Scratchpad
                     foreach (var item in list.ListItems)
                     {
                         ApplyPreviewFonts(item.Blocks);
+                    }
+                }
+            }
+        }
+
+        // An inline code span inside emphasis (**`code`**) or a link ([`code`](url)) is a Run
+        // nested one level inside a Bold/Italic/Hyperlink — all of which are Spans — rather than
+        // a direct child of the paragraph's Inlines. Without this recursion those spans silently
+        // keep the default font while every top-level code span switches.
+        private static IEnumerable<Run> FindRuns(IEnumerable<Inline> inlines)
+        {
+            foreach (var inline in inlines)
+            {
+                if (inline is Run run)
+                {
+                    yield return run;
+                }
+                else if (inline is Span span)
+                {
+                    foreach (var nested in FindRuns(span.Inlines))
+                    {
+                        yield return nested;
                     }
                 }
             }

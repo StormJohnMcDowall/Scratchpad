@@ -412,6 +412,10 @@ Expected: Build succeeded, 0 errors.
 - Close the app, reopen it — all three choices are restored.
 - Edit `%LOCALAPPDATA%\Scratchpad\font-family.json` to name a font that isn't installed, relaunch — the app starts normally, that field falls back to its default instead of crashing or showing a blank combo-box selection.
 - Exit from the tray without ever opening the main window (same scenario the prior font-sizing review caught as a data-loss bug) — relaunch and open Settings — the previously-chosen fonts are still there, not reset to default.
+- With both preview fonts left at their defaults, the two preview combo boxes show "(default)", not a blank selection; picking a real font and then picking "(default)" again returns the preview to Markdig.Wpf's own look exactly (added after final review — see `.superpowers/sdd/2026-10-29-settings-font-family/progress.md`).
+- Choose only a "Preview text" font (leave "Preview code" at default) and confirm fenced code blocks still render in a monospace look, not the chosen prose font — this is the direct read-out of whether the code/normal classification is working (added after final review).
+- Choose a "Preview code" font, then confirm it also applies to a code span inside **bold** text and inside a `[link](url)`, not just a plain inline `` `code span` `` (added after final review — these are nested one level inside the paragraph's top-level inlines).
+- Launch the app on a machine with a large number of installed fonts and confirm the tray icon still appears promptly — font enumeration is now skipped entirely unless a non-default font is configured, to keep it off the common startup path (added after final review).
 
 - [ ] **Step 7: Commit**
 
