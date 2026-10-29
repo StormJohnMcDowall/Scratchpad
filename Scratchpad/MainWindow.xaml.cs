@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using Markdig;
 using Scratchpad.Core;
 
 namespace Scratchpad
@@ -19,6 +22,9 @@ namespace Scratchpad
         {
             InitializeComponent();
             _autosave = new DebouncedAutosaveCoordinator(_documentStore.Save, TimeSpan.FromMilliseconds(500));
+            // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
+            // between what's rendered here and what gets toggled there.
+            PreviewViewer.Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -74,7 +80,7 @@ namespace Scratchpad
             PreviewToggleButton.IsChecked = showPreview;
             if (showPreview)
             {
-                PreviewViewer.Markdown = EditorTextBox.Text;
+                RenderPreview();
                 EditorTextBox.Visibility = Visibility.Collapsed;
                 PreviewScrollViewer.Visibility = Visibility.Visible;
             }
@@ -82,6 +88,67 @@ namespace Scratchpad
             {
                 EditorTextBox.Visibility = Visibility.Visible;
                 PreviewScrollViewer.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void RenderPreview()
+        {
+            PreviewViewer.Markdown = EditorTextBox.Text;
+            WireTaskListCheckBoxes();
+        }
+
+        // Markdig.Wpf renders task-list items as real (but disabled) CheckBox controls — this
+        // enables them and wires each one, by its position among all checkboxes in document
+        // order, to Scratchpad.Core.TaskListToggler so a click edits the underlying markdown.
+        private void WireTaskListCheckBoxes()
+        {
+            var index = 0;
+            foreach (var checkBox in FindTaskListCheckBoxes(PreviewViewer.Document.Blocks))
+            {
+                checkBox.IsEnabled = true;
+                var taskIndex = index;
+                checkBox.Click += (s, e) => OnTaskListCheckBoxClicked(taskIndex);
+                index++;
+            }
+        }
+
+        private void OnTaskListCheckBoxClicked(int taskIndex)
+        {
+            EditorTextBox.Text = TaskListToggler.Toggle(EditorTextBox.Text, taskIndex);
+            RenderPreview();
+        }
+
+        private static IEnumerable<CheckBox> FindTaskListCheckBoxes(IEnumerable<Block> blocks)
+        {
+            foreach (var block in blocks)
+            {
+                if (block is Paragraph paragraph)
+                {
+                    foreach (var inline in paragraph.Inlines)
+                    {
+                        if (inline is InlineUIContainer container && container.Child is CheckBox checkBox)
+                        {
+                            yield return checkBox;
+                        }
+                    }
+                }
+                else if (block is Section section)
+                {
+                    foreach (var checkBox in FindTaskListCheckBoxes(section.Blocks))
+                    {
+                        yield return checkBox;
+                    }
+                }
+                else if (block is List list)
+                {
+                    foreach (var item in list.ListItems)
+                    {
+                        foreach (var checkBox in FindTaskListCheckBoxes(item.Blocks))
+                        {
+                            yield return checkBox;
+                        }
+                    }
+                }
             }
         }
 
