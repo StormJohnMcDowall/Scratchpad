@@ -85,13 +85,23 @@ namespace Scratchpad.Core
 
         public void NotifyExistingInstanceToShow()
         {
-            using (var client = new NamedPipeClientStream(".", _pipeName, PipeDirection.Out))
+            // Best-effort: if the existing instance hasn't started listening yet, or has
+            // already gone away, there is nothing the caller can do but continue regardless
+            // (e.g. shut this second instance down). This must never throw.
+            try
             {
-                client.Connect(2000);
-                using (var writer = new StreamWriter(client) { AutoFlush = true })
+                using (var client = new NamedPipeClientStream(".", _pipeName, PipeDirection.Out))
                 {
-                    writer.WriteLine(InstanceMessage.Show);
+                    client.Connect(2000);
+                    using (var writer = new StreamWriter(client) { AutoFlush = true })
+                    {
+                        writer.WriteLine(InstanceMessage.Show);
+                    }
                 }
+            }
+            catch
+            {
+                // See comment above.
             }
         }
 

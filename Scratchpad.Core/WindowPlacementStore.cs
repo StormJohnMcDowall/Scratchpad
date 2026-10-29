@@ -40,22 +40,32 @@ namespace Scratchpad.Core
 
         public void Save(WindowBounds bounds)
         {
-            var directory = Path.GetDirectoryName(FilePath);
-            if (!string.IsNullOrEmpty(directory))
+            // Remembering window position is a nicety, not the app's core promise (unlike the
+            // document itself) — a failure here (e.g. non-finite values, a locked file) must
+            // never be allowed to crash the app.
+            try
             {
-                Directory.CreateDirectory(directory);
-            }
+                var directory = Path.GetDirectoryName(FilePath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
 
-            var tempPath = FilePath + ".tmp";
-            File.WriteAllText(tempPath, JsonSerializer.Serialize(bounds));
+                var tempPath = FilePath + ".tmp";
+                File.WriteAllText(tempPath, JsonSerializer.Serialize(bounds));
 
-            if (File.Exists(FilePath))
-            {
-                File.Replace(tempPath, FilePath, null);
+                if (File.Exists(FilePath))
+                {
+                    File.Replace(tempPath, FilePath, null);
+                }
+                else
+                {
+                    File.Move(tempPath, FilePath);
+                }
             }
-            else
+            catch
             {
-                File.Move(tempPath, FilePath);
+                // Best-effort; see comment above.
             }
         }
     }

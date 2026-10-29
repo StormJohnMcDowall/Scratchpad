@@ -33,4 +33,15 @@ public class SingleInstanceGuardTests
 
         Assert.True(signal.Wait(TimeSpan.FromSeconds(2)));
     }
+
+    [Fact]
+    public void NotifyExistingInstanceToShow_WhenNoListenerExists_DoesNotThrow()
+    {
+        var pipeName = "Test-" + Guid.NewGuid();
+        using var guard = new SingleInstanceGuard("Test-" + Guid.NewGuid(), pipeName);
+
+        var ex = Record.Exception(() => guard.NotifyExistingInstanceToShow());
+
+        Assert.Null(ex);
+    }
 }
