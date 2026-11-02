@@ -32,7 +32,7 @@
         <Setter Property="Control.Template">
             <Setter.Value>
                 <ControlTemplate>
-                    <Rectangle Stroke="{DynamicResource PostItTextBrush}" StrokeThickness="1" StrokeDashArray="1 2" SnapsToDevicePixels="True" />
+                    <Rectangle Margin="2" Stroke="{DynamicResource PostItTextBrush}" StrokeThickness="1" StrokeDashArray="1 2" SnapsToDevicePixels="True" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
