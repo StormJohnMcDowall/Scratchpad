@@ -28,6 +28,15 @@ namespace Scratchpad
         {
             InitializeComponent();
             _themeManager = themeManager;
+            // Brushes elsewhere follow the swap on their own (DynamicResource); the preview's
+            // dark overrides are per-element local values, so they need re-walking.
+            _themeManager.ThemeChanged += _ =>
+            {
+                if (PreviewToggleButton.IsChecked == true)
+                {
+                    ApplyPreviewTheme();
+                }
+            };
             _autosave = new DebouncedAutosaveCoordinator(_documentStore.Save, TimeSpan.FromMilliseconds(500));
             // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
             // between what's rendered here and what gets toggled there.
@@ -148,6 +157,7 @@ namespace Scratchpad
             PreviewViewer.Markdown = EditorTextBox.Text;
             ApplyPreviewFontSize();
             ApplyPreviewFonts();
+            ApplyPreviewTheme();
             ApplyPreviewBackground();
             WireTaskListCheckBoxes();
         }
@@ -356,6 +366,131 @@ namespace Scratchpad
                     foreach (var item in list.ListItems)
                     {
                         ApplyPreviewFonts(item.Blocks);
+                    }
+                }
+            }
+        }
+
+        // Markdig.Wpf's own styles colour the preview for a white page (dark text, light-grey
+        // code and quote borders, system-blue links). In dark, stamp resource references onto
+        // each element — local values beat style setters, and references follow later palette
+        // swaps. In light, clear exactly those values so Markdig.Wpf's look returns untouched.
+        // Classification mirrors ApplyPreviewFonts (style-reference comparison).
+        private void ApplyPreviewTheme()
+        {
+            if (PreviewViewer.Document == null)
+            {
+                return;
+            }
+
+            var dark = _themeManager.Current == AppTheme.Dark;
+            SetOrClearReference(PreviewViewer.Document, TextElement.ForegroundProperty, "PostItTextBrush", dark);
+            ApplyPreviewTheme(PreviewViewer.Document.Blocks, dark);
+        }
+
+        private void ApplyPreviewTheme(IEnumerable<Block> blocks, bool dark)
+        {
+            var codeBlockStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeBlockStyleKey) as Style;
+            var codeStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeStyleKey) as Style;
+            var quoteStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.QuoteBlockStyleKey) as Style;
+            var tableHeaderStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.TableHeaderStyleKey) as Style;
+
+            foreach (var block in blocks)
+            {
+                if (block is Paragraph paragraph)
+                {
+                    // Every paragraph, not just the document: heading styles may set their own
+                    // Foreground, which a document-level value wouldn't override.
+                    SetOrClearReference(paragraph, TextElement.ForegroundProperty, "PostItTextBrush", dark);
+
+                    if (codeBlockStyle != null && ReferenceEquals(paragraph.Style, codeBlockStyle))
+                    {
+                        SetOrClearReference(paragraph, TextElement.BackgroundProperty, "PreviewCodeBackgroundBrush", dark);
+                    }
+
+                    foreach (var inline in FindInlines(paragraph.Inlines))
+                    {
+                        if (inline is Hyperlink)
+                        {
+                            SetOrClearReference(inline, TextElement.ForegroundProperty, "PreviewLinkBrush", dark);
+                        }
+                        else if (inline is Run && codeStyle != null && ReferenceEquals(inline.Style, codeStyle))
+                        {
+                            SetOrClearReference(inline, TextElement.ForegroundProperty, "PostItTextBrush", dark);
+                            SetOrClearReference(inline, TextElement.BackgroundProperty, "PreviewCodeBackgroundBrush", dark);
+                        }
+                    }
+                }
+                else if (block is Section section)
+                {
+                    if (quoteStyle != null && ReferenceEquals(section.Style, quoteStyle))
+                    {
+                        SetOrClearReference(section, Block.BorderBrushProperty, "PreviewQuoteBorderBrush", dark);
+                    }
+                    ApplyPreviewTheme(section.Blocks, dark);
+                }
+                else if (block is List list)
+                {
+                    foreach (var item in list.ListItems)
+                    {
+                        ApplyPreviewTheme(item.Blocks, dark);
+                    }
+                }
+                else if (block is Table table)
+                {
+                    SetOrClearReference(table, Block.BorderBrushProperty, "PreviewTableBorderBrush", dark);
+                    foreach (var row in table.RowGroups.SelectMany(g => g.Rows))
+                    {
+                        if (tableHeaderStyle != null && ReferenceEquals(row.Style, tableHeaderStyle))
+                        {
+                            SetOrClearReference(row, TextElement.BackgroundProperty, "PostItToolbarBrush", dark);
+                        }
+                        foreach (var cell in row.Cells)
+                        {
+                            SetOrClearReference(cell, TableCell.BorderBrushProperty, "PreviewTableBorderBrush", dark);
+                            ApplyPreviewTheme(cell.Blocks, dark);
+                        }
+                    }
+                }
+                else if (block is BlockUIContainer container && container.Child is System.Windows.Shapes.Shape rule)
+                {
+                    // Markdig.Wpf draws a thematic break (---) as a Line inside a BlockUIContainer.
+                    if (dark)
+                    {
+                        rule.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "PostItBorderBrush");
+                    }
+                    else
+                    {
+                        rule.ClearValue(System.Windows.Shapes.Shape.StrokeProperty);
+                    }
+                }
+            }
+        }
+
+        private static void SetOrClearReference(FrameworkContentElement element, DependencyProperty property, string resourceKey, bool set)
+        {
+            if (set)
+            {
+                element.SetResourceReference(property, resourceKey);
+            }
+            else
+            {
+                element.ClearValue(property);
+            }
+        }
+
+        // Every inline at any depth — links and code spans can sit inside Bold/Italic/Hyperlink
+        // Spans, the same nesting FindRuns handles for fonts.
+        private static IEnumerable<Inline> FindInlines(IEnumerable<Inline> inlines)
+        {
+            foreach (var inline in inlines)
+            {
+                yield return inline;
+                if (inline is Span span)
+                {
+                    foreach (var nested in FindInlines(span.Inlines))
+                    {
+                        yield return nested;
                     }
                 }
             }

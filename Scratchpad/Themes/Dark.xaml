@@ -203,4 +203,35 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- Task-list checkboxes in the preview: the system box is bright white on dark paper. -->
+    <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="Box" Width="13" Height="13" VerticalAlignment="Center"
+                                Background="{DynamicResource PostItButtonBrush}"
+                                BorderBrush="{DynamicResource PostItTextBrush}" BorderThickness="1" CornerRadius="2">
+                            <Path x:Name="Glyph" Data="M 2 6 L 5 9 L 10 3" Stroke="{DynamicResource PostItTextBrush}"
+                                  StrokeThickness="2" Visibility="Collapsed" />
+                        </Border>
+                        <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Glyph" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="Background" Value="{DynamicResource PostItButtonHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>
