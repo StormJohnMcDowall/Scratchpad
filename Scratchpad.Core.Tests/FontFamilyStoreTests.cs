@@ -72,4 +72,12 @@ public class FontFamilyStoreTests
 
         Assert.Equal(Default, store.Load());
     }
+
+    [Fact]
+    public void Defaults_MatchesLoadWhenFileMissing()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "font-family.json");
+        Assert.Equal(new FontFamilyStore(path).Load(), FontFamilyStore.Defaults);
+        Assert.True(FontFamilyStore.Defaults.IsDefault());
+    }
 }

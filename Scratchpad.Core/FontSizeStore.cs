@@ -6,7 +6,8 @@ namespace Scratchpad.Core
 {
     public class FontSizeStore
     {
-        private static readonly FontSizeSettings DefaultSettings = new FontSizeSettings
+        // What a fresh install gets; also what Settings' "Reset to defaults" restores.
+        public static FontSizeSettings Defaults { get; } = new FontSizeSettings
         {
             EditorFontSize = FontSizing.Default,
             PreviewFontSize = FontSizing.Default
@@ -37,7 +38,7 @@ namespace Scratchpad.Core
             }
             catch
             {
-                return DefaultSettings;
+                return Defaults;
             }
         }
 

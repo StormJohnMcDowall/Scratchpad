@@ -8,7 +8,8 @@ namespace Scratchpad.Core
     {
         public const string DefaultEditorFontFamily = "Consolas";
 
-        private static readonly FontFamilySettings DefaultSettings = new FontFamilySettings
+        // What a fresh install gets; also what Settings' "Reset to defaults" restores.
+        public static FontFamilySettings Defaults { get; } = new FontFamilySettings
         {
             EditorFontFamily = DefaultEditorFontFamily,
             PreviewNormalFontFamily = null,
@@ -47,7 +48,7 @@ namespace Scratchpad.Core
             }
             catch
             {
-                return DefaultSettings;
+                return Defaults;
             }
         }
 
