@@ -150,7 +150,7 @@ namespace Scratchpad
             WireTaskListCheckBoxes();
         }
 
-        // Markdig.Wpf creates a fresh FlowDocument on every Markdown assignment (the same reason
+        // Markdig.Wpf creates a fresh FlowDocument whenever the Markdown text changes (the same reason
         // ApplyPreviewFontSize/ApplyPreviewFonts already exist as post-render steps) — the
         // ScrollViewer's own Background alone isn't visible if that FlowDocument paints its own
         // opaque background on top.
@@ -311,9 +311,10 @@ namespace Scratchpad
             ApplyPreviewFonts(PreviewViewer.Document.Blocks);
         }
 
-        // A null Preview*FontFamily means "no override" — leave that element's FontFamily
-        // untouched, so Markdig.Wpf's own default renders exactly as it does for anyone who's
-        // never opened Settings. Mirrors FindTaskListCheckBoxes's recursion shape rather than
+        // A null Preview*FontFamily means "no override" — clear any FontFamily an earlier pass
+        // stamped on the element (Markdig.Wpf can keep the same FlowDocument across renders, so
+        // a previous choice would otherwise linger), letting Markdig.Wpf's own default render
+        // exactly as it does for anyone who's never opened Settings. Mirrors FindTaskListCheckBoxes's recursion shape rather than
         // inventing a new tree-walk pattern. Style-reference comparison (not a resource-override
         // mechanism) is used purely to classify each element — stamping FontFamily as a local
         // value always wins regardless of what Markdig.Wpf's own styles do internally, sidestepping
@@ -329,18 +330,15 @@ namespace Scratchpad
                 {
                     var isCodeBlock = codeBlockStyle != null && ReferenceEquals(paragraph.Style, codeBlockStyle);
                     var paragraphFontFamily = isCodeBlock ? _fontFamilySettings.PreviewCodeFontFamily : _fontFamilySettings.PreviewNormalFontFamily;
-                    if (paragraphFontFamily != null)
-                    {
-                        paragraph.FontFamily = new FontFamily(paragraphFontFamily);
-                    }
+                    SetOrClearFontFamily(paragraph, paragraphFontFamily);
 
-                    if (!isCodeBlock && _fontFamilySettings.PreviewCodeFontFamily != null && codeStyle != null)
+                    if (!isCodeBlock && codeStyle != null)
                     {
                         foreach (var run in FindRuns(paragraph.Inlines))
                         {
                             if (ReferenceEquals(run.Style, codeStyle))
                             {
-                                run.FontFamily = new FontFamily(_fontFamilySettings.PreviewCodeFontFamily);
+                                SetOrClearFontFamily(run, _fontFamilySettings.PreviewCodeFontFamily);
                             }
                         }
                     }
@@ -356,6 +354,18 @@ namespace Scratchpad
                         ApplyPreviewFonts(item.Blocks);
                     }
                 }
+            }
+        }
+
+        private static void SetOrClearFontFamily(TextElement element, string fontFamily)
+        {
+            if (fontFamily == null)
+            {
+                element.ClearValue(TextElement.FontFamilyProperty);
+            }
+            else
+            {
+                element.FontFamily = new FontFamily(fontFamily);
             }
         }
 
