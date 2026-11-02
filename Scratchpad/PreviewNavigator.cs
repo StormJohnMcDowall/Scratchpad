@@ -20,6 +20,12 @@ namespace Scratchpad
         private readonly MarkdownViewer _viewer;
         private Visual _renderScope;
 
+        /// <summary>
+        /// Returned by UnitIndexAtExtentY when a block couldn't be measured, as distinct from -1
+        /// (the point is below every block).
+        /// </summary>
+        public const int Unmeasurable = -2;
+
         public PreviewNavigator(ScrollViewer scrollViewer, MarkdownViewer viewer)
         {
             _scrollViewer = scrollViewer;
@@ -62,8 +68,8 @@ namespace Scratchpad
         }
 
         /// <summary>
-        /// The first unit whose bottom is below y (in scroll-extent coordinates), or -1 when y is
-        /// below every unit or the layout can't be measured.
+        /// The first unit whose bottom is below y (in scroll-extent coordinates), -1 when y is
+        /// below every unit, or Unmeasurable when the layout can't be measured.
         /// </summary>
         public int UnitIndexAtExtentY(IReadOnlyList<Block> units, double y)
         {
@@ -72,7 +78,7 @@ namespace Scratchpad
                 var bottom = CharacterRectInExtent(units[i].ContentEnd.GetInsertionPosition(LogicalDirection.Backward));
                 if (bottom == null)
                 {
-                    return -1;
+                    return Unmeasurable;
                 }
                 if (bottom.Value.Bottom > y)
                 {
@@ -92,12 +98,14 @@ namespace Scratchpad
         }
 
         /// <summary>
-        /// Converts a point relative to the MarkdownViewer into scroll-extent coordinates. The
-        /// viewer is the ScrollViewer's content, so the two are the same.
+        /// Converts a point relative to the ScrollViewer into scroll-extent coordinates: the
+        /// coordinates VerticalOffset and ScrollToVerticalOffset use, which include the preview
+        /// zoom (a LayoutTransform on the viewer).
         /// </summary>
-        public Point? ToExtent(Point pointInViewer)
+        public Point ToExtent(Point pointInScrollViewer)
         {
-            return pointInViewer;
+            return new Point(pointInScrollViewer.X + _scrollViewer.HorizontalOffset,
+                             pointInScrollViewer.Y + _scrollViewer.VerticalOffset);
         }
 
         public Rect? CharacterRectInExtent(TextPointer pointer)
@@ -115,7 +123,11 @@ namespace Scratchpad
                 {
                     return null;
                 }
-                return scope.TransformToAncestor(_viewer).TransformBounds(rect);
+                // Transformed to the ScrollViewer, not the viewer, so the preview zoom's
+                // LayoutTransform is applied; then shifted by the scroll offset into the extent.
+                var bounds = scope.TransformToAncestor(_scrollViewer).TransformBounds(rect);
+                bounds.Offset(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset);
+                return bounds;
             }
             catch (InvalidOperationException)
             {

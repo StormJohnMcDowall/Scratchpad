@@ -165,35 +165,37 @@ namespace Scratchpad
         }
 
         /// <summary>
-        /// Shows the editor. With a caret index, puts the caret there and scrolls its block to the
-        /// top; without one, does the same for whichever block is at the top of the preview, so
-        /// switching keeps your place.
+        /// Shows the editor with the block that was at the top of the preview at the top of the
+        /// editor, so switching keeps your place. The caret goes to caretIndex when given (a
+        /// double-click), else to the start of that top block.
         /// </summary>
         private void SwitchToEditorAt(int? caretIndex)
         {
             PreviewToggleButton.IsChecked = false;
-            var target = caretIndex;
-            if (target == null && PreviewScrollViewer.IsVisible)
-            {
-                target = TopPreviewBlockStart();
-            }
+            var scrollTarget = PreviewScrollViewer.IsVisible ? TopPreviewBlockStart() : null;
+            var caret = caretIndex ?? scrollTarget;
 
             EditorTextBox.Visibility = Visibility.Visible;
             PreviewScrollViewer.Visibility = Visibility.Collapsed;
             EditorTextBox.Focus();
 
-            if (target == null)
-            {
-                return;
-            }
-
             // Measuring is best-effort and can't be exercised outside Windows: if anything here
             // fails, the switch has still happened and the editor just stays where it was.
             try
             {
-                var index = Math.Max(0, Math.Min(target.Value, EditorTextBox.Text.Length));
-                EditorTextBox.CaretIndex = index;
-                ScrollEditorToCharacter(index);
+                var length = EditorTextBox.Text.Length;
+                if (caret != null)
+                {
+                    EditorTextBox.CaretIndex = Math.Max(0, Math.Min(caret.Value, length));
+                }
+                if (scrollTarget != null)
+                {
+                    ScrollEditorToCharacter(Math.Max(0, Math.Min(scrollTarget.Value, length)));
+                }
+                if (caretIndex != null && !IsCaretOnScreen())
+                {
+                    ScrollEditorToCharacter(EditorTextBox.CaretIndex);
+                }
             }
             catch (Exception)
             {
@@ -233,7 +235,7 @@ namespace Scratchpad
                 return null;
             }
 
-            var point = _previewNavigator.ToExtent(e.GetPosition(PreviewViewer));
+            Point? point = _previewNavigator.ToExtent(e.GetPosition(PreviewScrollViewer));
             var index = -1;
             for (var element = e.OriginalSource as DependencyObject; element is ContentElement; element = LogicalTreeHelper.GetParent(element))
             {
@@ -254,9 +256,13 @@ namespace Scratchpad
                     return null;
                 }
                 index = _previewNavigator.UnitIndexAtExtentY(units, point.Value.Y);
-                if (index < 0)
+                if (index == -1)
                 {
                     return text.Length;
+                }
+                if (index < 0)
+                {
+                    return null;
                 }
             }
 
@@ -342,8 +348,22 @@ namespace Scratchpad
 
         private int EditorTopCharacterIndex()
         {
-            var line = EditorTextBox.GetFirstVisibleLineIndex();
-            return line < 0 ? -1 : EditorTextBox.GetCharacterIndexFromLineIndex(line);
+            try
+            {
+                var line = EditorTextBox.GetFirstVisibleLineIndex();
+                return line < 0 ? -1 : EditorTextBox.GetCharacterIndexFromLineIndex(line);
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        private bool IsCaretOnScreen()
+        {
+            EditorTextBox.UpdateLayout();
+            var rect = EditorTextBox.GetRectFromCharacterIndex(EditorTextBox.CaretIndex);
+            return !rect.IsEmpty && rect.Top >= 0 && rect.Bottom <= EditorTextBox.ViewportHeight;
         }
 
         private void ScrollEditorToCharacter(int index)
