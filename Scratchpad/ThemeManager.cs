@@ -66,8 +66,11 @@ namespace Scratchpad
         {
             var theme = ThemeResolver.Resolve(Preference, ThemeResolver.WindowsAppsUseLightTheme(_registry));
             var merged = Application.Current.Resources.MergedDictionaries;
-            var existing = merged.FirstOrDefault(d => d.Source == LightUri || d.Source == DarkUri
-                || (d.Source != null && d.Source.OriginalString.StartsWith("Themes/", StringComparison.OrdinalIgnoreCase)));
+            // Matched by file name: App.xaml merges Light.xaml by a relative URI, and the
+            // always-merged Themes/ScrollBars.xaml must never be mistaken for a palette.
+            var existing = merged.FirstOrDefault(d => d.Source != null
+                && (d.Source.OriginalString.EndsWith("Themes/Light.xaml", StringComparison.OrdinalIgnoreCase)
+                    || d.Source.OriginalString.EndsWith("Themes/Dark.xaml", StringComparison.OrdinalIgnoreCase)));
             var wanted = theme == AppTheme.Dark ? DarkUri : LightUri;
 
             if (existing == null || existing.Source != wanted)

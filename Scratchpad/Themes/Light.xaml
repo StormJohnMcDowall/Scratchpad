@@ -1,6 +1,6 @@
-<!-- Today's Post-it palette, unchanged. Holds only brushes the main window always uses:
-     anything that uses Windows' own colours in light mode (scrollbars, menus, Settings,
-     preview elements) is themed only in Dark.xaml, so light mode stays exactly as it was. -->
+<!-- The light Post-it palette: only brushes the main window always uses (including its
+     scrollbars). Anything that uses Windows' own colours in light mode (menus, Settings, preview
+     elements) is themed only in Dark.xaml. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <SolidColorBrush x:Key="PostItBackgroundBrush" Color="#FFF3A3" />
@@ -11,4 +11,6 @@
     <SolidColorBrush x:Key="PostItButtonPressedBrush" Color="#F0C419" />
     <SolidColorBrush x:Key="PostItTextBrush" Color="#5C4F1A" />
     <SolidColorBrush x:Key="PostItCheckedTextBrush" Color="#5C4F1A" />
+    <SolidColorBrush x:Key="PostItScrollThumbBrush" Color="#E6D978" />
+    <SolidColorBrush x:Key="PostItScrollThumbHoverBrush" Color="#F0C419" />
 </ResourceDictionary>

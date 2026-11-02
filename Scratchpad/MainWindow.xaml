@@ -43,6 +43,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource PostItScrollBarStyle}" />
         <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PostItButtonBaseStyle}" />
         <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PostItButtonBaseStyle}">
             <Style.Triggers>

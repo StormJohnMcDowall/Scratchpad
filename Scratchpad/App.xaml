@@ -8,6 +8,7 @@
              changes; Light is merged here so every brush key exists from the first parse. -->
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/ScrollBars.xaml" />
                 <ResourceDictionary Source="Themes/Light.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
