@@ -20,12 +20,6 @@
     <SolidColorBrush x:Key="PreviewQuoteBorderBrush" Color="#8A7220" />
     <SolidColorBrush x:Key="PreviewTableBorderBrush" Color="#5A5130" />
 
-    <!-- Editor: the caret and selection default to system colours that vanish on dark paper.
-         EditorTextBox's own local Background/Foreground still win over this style. -->
-    <Style TargetType="{x:Type TextBox}">
-        <Setter Property="CaretBrush" Value="{DynamicResource PostItTextBrush}" />
-        <Setter Property="SelectionBrush" Value="{DynamicResource PostItSelectionBrush}" />
-    </Style>
 
     <!-- Scrollbars: a full template because the system one paints its own light track. -->
     <Style x:Key="PostItScrollArrowStyle" TargetType="{x:Type RepeatButton}">
@@ -194,6 +188,35 @@
         </Setter>
     </Style>
 
+    <!-- WPF builds a text box's built-in Cut/Copy/Paste menu from private ContextMenu/MenuItem
+         subclasses, which implicit styles (exact-type only) never reach. So in dark only, give
+         the editor and the preview real menus of our own; the commands supply the header text
+         and shortcut. In light the built-in menus return untouched. x:Shared="False": each
+         control gets its own instance, as a menu can only have one owner. -->
+    <ContextMenu x:Key="PostItEditorContextMenu" x:Shared="False">
+        <MenuItem Command="ApplicationCommands.Cut" />
+        <MenuItem Command="ApplicationCommands.Copy" />
+        <MenuItem Command="ApplicationCommands.Paste" />
+    </ContextMenu>
+
+    <ContextMenu x:Key="PostItPreviewContextMenu" x:Shared="False">
+        <MenuItem Command="ApplicationCommands.Copy" />
+        <Separator />
+        <MenuItem Command="ApplicationCommands.SelectAll" />
+    </ContextMenu>
+
+    <!-- Editor: the caret and selection default to system colours that vanish on dark paper.
+         EditorTextBox's own local Background/Foreground still win over this style. -->
+    <Style TargetType="{x:Type TextBox}">
+        <Setter Property="CaretBrush" Value="{DynamicResource PostItTextBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource PostItSelectionBrush}" />
+        <Setter Property="ContextMenu" Value="{StaticResource PostItEditorContextMenu}" />
+    </Style>
+
+    <Style TargetType="{x:Type FlowDocumentScrollViewer}">
+        <Setter Property="ContextMenu" Value="{StaticResource PostItPreviewContextMenu}" />
+    </Style>
+
     <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
         <Setter Property="Template">
             <Setter.Value>
@@ -204,8 +227,11 @@
         </Setter>
     </Style>
 
-    <!-- Task-list checkboxes in the preview: the system box is bright white on dark paper. -->
-    <Style TargetType="{x:Type CheckBox}">
+    <!-- Task-list checkboxes in the preview: the system box is bright white on dark paper.
+         Keyed, not implicit: MainWindow.ApplyPreviewTheme swaps it in for Markdig.Wpf's explicit
+         TaskListStyleKey style, whose only setter (this margin) is carried over. -->
+    <Style x:Key="PostItTaskListCheckBoxStyle" TargetType="{x:Type CheckBox}">
+        <Setter Property="Margin" Value="0,0,0,-2" />
         <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
         <Setter Property="Template">
             <Setter.Value>

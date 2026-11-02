@@ -72,11 +72,24 @@ namespace Scratchpad
 
             if (existing == null || existing.Source != wanted)
             {
+                // Load the new palette before removing the old one: if it ever failed to load,
+                // the app keeps its current colours (and Current stays as it was) rather than
+                // being left with no brushes at all — or, on the SystemEvents path, crashing.
+                ResourceDictionary replacement;
+                try
+                {
+                    replacement = new ResourceDictionary { Source = wanted };
+                }
+                catch
+                {
+                    return;
+                }
+
                 if (existing != null)
                 {
                     merged.Remove(existing);
                 }
-                merged.Add(new ResourceDictionary { Source = wanted });
+                merged.Add(replacement);
             }
 
             if (theme != Current)

@@ -270,7 +270,10 @@ namespace Scratchpad
             settingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             settingsWindow.SettingsChanged += OnFontFamilySettingsChanged;
             settingsWindow.ResetRequested += OnResetRequested;
-            settingsWindow.ThemePreferenceChanged += preference => _themeManager.SetPreference(preference);
+            // Deferred: applying swaps the palette, which re-templates the very combo box whose
+            // SelectionChanged is still on the stack — let that handler finish first.
+            settingsWindow.ThemePreferenceChanged += preference =>
+                Dispatcher.BeginInvoke(new Action(() => _themeManager.SetPreference(preference)));
             settingsWindow.Closed += (s, args) => _settingsWindow = null;
             _settingsWindow = settingsWindow;
             settingsWindow.Show();
@@ -424,6 +427,29 @@ namespace Scratchpad
                             SetOrClearReference(inline, TextElement.ForegroundProperty, "PostItTextBrush", dark);
                             SetOrClearReference(inline, TextElement.BackgroundProperty, "PreviewCodeBackgroundBrush", dark);
                         }
+                        else if (inline is InlineUIContainer container && container.Child is CheckBox checkBox)
+                        {
+                            // Markdig.Wpf gives each task-list checkbox an explicit style
+                            // (TaskListStyleKey), which blocks any implicit CheckBox style — so swap
+                            // the style reference itself, and in light restore Markdig's (not
+                            // ClearValue, which would drop its margin and shift the layout).
+                            checkBox.SetResourceReference(StyleProperty, dark
+                                ? (object)"PostItTaskListCheckBoxStyle"
+                                : Markdig.Wpf.Styles.TaskListStyleKey);
+                        }
+                        else if (inline is InlineUIContainer ruleContainer && ruleContainer.Child is System.Windows.Shapes.Line rule)
+                        {
+                            // A thematic break (---): Markdig.Wpf draws a black Line inside a
+                            // paragraph, all but invisible on dark paper.
+                            if (dark)
+                            {
+                                rule.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "PostItBorderBrush");
+                            }
+                            else
+                            {
+                                rule.ClearValue(System.Windows.Shapes.Shape.StrokeProperty);
+                            }
+                        }
                     }
                 }
                 else if (block is Section section)
@@ -455,18 +481,6 @@ namespace Scratchpad
                             SetOrClearReference(cell, TableCell.BorderBrushProperty, "PreviewTableBorderBrush", dark);
                             ApplyPreviewTheme(cell.Blocks, dark);
                         }
-                    }
-                }
-                else if (block is BlockUIContainer container && container.Child is System.Windows.Shapes.Shape rule)
-                {
-                    // Markdig.Wpf draws a thematic break (---) as a Line inside a BlockUIContainer.
-                    if (dark)
-                    {
-                        rule.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "PostItBorderBrush");
-                    }
-                    else
-                    {
-                        rule.ClearValue(System.Windows.Shapes.Shape.StrokeProperty);
                     }
                 }
             }
