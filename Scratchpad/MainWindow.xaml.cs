@@ -22,6 +22,7 @@ namespace Scratchpad
         private readonly StartupWindowStore _startupWindowStore = new StartupWindowStore(StartupWindowStore.DefaultFilePath);
         private StartupWindowSettings _startupWindowSettings;
         private SettingsWindow _settingsWindow;
+        private readonly PreviewNavigator _previewNavigator;
         private readonly ThemeManager _themeManager;
         private readonly DebouncedAutosaveCoordinator _autosave;
         private bool _isExiting;
@@ -44,6 +45,7 @@ namespace Scratchpad
             // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
             // between what's rendered here and what gets toggled there.
             PreviewViewer.Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
+            _previewNavigator = new PreviewNavigator(PreviewScrollViewer, PreviewViewer);
 
             // Loaded here, not in Window_Loaded: by default this app starts hidden in the tray
             // (App.xaml.cs only calls Show() when "Show the window when Scratchpad starts" is
@@ -147,17 +149,122 @@ namespace Scratchpad
 
         private void SetPreviewMode(bool showPreview)
         {
-            PreviewToggleButton.IsChecked = showPreview;
             if (showPreview)
             {
+                PreviewToggleButton.IsChecked = true;
+                var editorTop = EditorTextBox.IsVisible ? EditorTopCharacterIndex() : -1;
                 RenderPreview();
                 EditorTextBox.Visibility = Visibility.Collapsed;
                 PreviewScrollViewer.Visibility = Visibility.Visible;
+                ScrollPreviewToSource(editorTop);
             }
             else
             {
-                EditorTextBox.Visibility = Visibility.Visible;
-                PreviewScrollViewer.Visibility = Visibility.Collapsed;
+                SwitchToEditorAt(null);
+            }
+        }
+
+        /// <summary>
+        /// Shows the editor. With a caret index, puts the caret there and scrolls its block to the
+        /// top; without one, does the same for whichever block is at the top of the preview, so
+        /// switching keeps your place.
+        /// </summary>
+        private void SwitchToEditorAt(int? caretIndex)
+        {
+            PreviewToggleButton.IsChecked = false;
+            var target = caretIndex;
+            if (target == null && PreviewScrollViewer.IsVisible)
+            {
+                target = TopPreviewBlockStart();
+            }
+
+            EditorTextBox.Visibility = Visibility.Visible;
+            PreviewScrollViewer.Visibility = Visibility.Collapsed;
+            EditorTextBox.Focus();
+
+            if (target == null)
+            {
+                return;
+            }
+
+            // Measuring is best-effort and can't be exercised outside Windows: if anything here
+            // fails, the switch has still happened and the editor just stays where it was.
+            try
+            {
+                var index = Math.Max(0, Math.Min(target.Value, EditorTextBox.Text.Length));
+                EditorTextBox.CaretIndex = index;
+                ScrollEditorToCharacter(index);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        // The source offset of the block at the top of the preview, or null when the rendered
+        // blocks don't line up with the source map (then nothing moves).
+        private int? TopPreviewBlockStart()
+        {
+            try
+            {
+                var units = _previewNavigator.GetUnits();
+                var map = PreviewSourceMap.Build(EditorTextBox.Text);
+                if (units.Count != map.Count)
+                {
+                    return null;
+                }
+                var index = _previewNavigator.TopUnitIndex(units);
+                return index >= 0 ? map[index].Start : (int?)null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private void ScrollPreviewToSource(int sourceOffset)
+        {
+            if (sourceOffset < 0)
+            {
+                return;
+            }
+
+            try
+            {
+                PreviewScrollViewer.UpdateLayout();
+                var units = _previewNavigator.GetUnits();
+                var map = PreviewSourceMap.Build(EditorTextBox.Text);
+                if (units.Count != map.Count)
+                {
+                    return;
+                }
+                var index = PreviewSourceMap.BlockIndexAt(map, sourceOffset);
+                if (index >= 0)
+                {
+                    _previewNavigator.ScrollUnitToTop(units[index]);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private int EditorTopCharacterIndex()
+        {
+            var line = EditorTextBox.GetFirstVisibleLineIndex();
+            return line < 0 ? -1 : EditorTextBox.GetCharacterIndexFromLineIndex(line);
+        }
+
+        private void ScrollEditorToCharacter(int index)
+        {
+            EditorTextBox.UpdateLayout();
+            var rect = EditorTextBox.GetRectFromCharacterIndex(index);
+            if (!rect.IsEmpty)
+            {
+                EditorTextBox.ScrollToVerticalOffset(EditorTextBox.VerticalOffset + rect.Top);
+            }
+            else
+            {
+                EditorTextBox.ScrollToLine(EditorTextBox.GetLineIndexFromCharacterIndex(index));
             }
         }
 
