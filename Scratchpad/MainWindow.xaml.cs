@@ -19,6 +19,7 @@ namespace Scratchpad
         private FontSizeSettings _fontSizeSettings;
         private readonly FontFamilyStore _fontFamilyStore = new FontFamilyStore(FontFamilyStore.DefaultFilePath);
         private FontFamilySettings _fontFamilySettings;
+        private SettingsWindow _settingsWindow;
         private readonly DebouncedAutosaveCoordinator _autosave;
         private bool _isExiting;
 
@@ -234,6 +235,17 @@ namespace Scratchpad
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
+            // Only ever one Settings window: a second click brings the existing one forward.
+            if (_settingsWindow != null)
+            {
+                if (_settingsWindow.WindowState == WindowState.Minimized)
+                {
+                    _settingsWindow.WindowState = WindowState.Normal;
+                }
+                _settingsWindow.Activate();
+                return;
+            }
+
             var settingsWindow = new SettingsWindow(_fontFamilySettings, FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
             // Without an Owner, Windows places the window at its default cascade position
             // (top-left), unrelated to wherever the user has parked Scratchpad. Owning it also
@@ -241,6 +253,8 @@ namespace Scratchpad
             settingsWindow.Owner = this;
             settingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             settingsWindow.SettingsChanged += OnFontFamilySettingsChanged;
+            settingsWindow.Closed += (s, args) => _settingsWindow = null;
+            _settingsWindow = settingsWindow;
             settingsWindow.Show();
         }
 
