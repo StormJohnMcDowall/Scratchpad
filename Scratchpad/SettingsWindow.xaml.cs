@@ -17,7 +17,12 @@ namespace Scratchpad
         // actual installed font family of the same name.
         private static readonly FontFamily DefaultSentinel = new FontFamily("(default)");
 
+        private readonly IReadOnlyList<FontFamily> _monospaceFamilies;
+        private readonly IReadOnlyList<FontFamily> _normalTextFamilies;
+        private bool _isUpdatingSelection;
+
         public event Action<FontFamilySettings> SettingsChanged;
+        public event Action ResetRequested;
 
         public SettingsWindow(FontFamilySettings current, IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
         {
@@ -30,21 +35,54 @@ namespace Scratchpad
             PreviewCodeFontComboBox.ItemsSource = codeFontChoices;
             PreviewNormalFontComboBox.ItemsSource = normalTextChoices;
 
-            EditorFontComboBox.SelectedItem = monospaceFamilies.FirstOrDefault(f => f.Source == current.EditorFontFamily);
-            PreviewNormalFontComboBox.SelectedItem = current.PreviewNormalFontFamily == null
-                ? DefaultSentinel
-                : normalTextFamilies.FirstOrDefault(f => f.Source == current.PreviewNormalFontFamily);
-            PreviewCodeFontComboBox.SelectedItem = current.PreviewCodeFontFamily == null
-                ? DefaultSentinel
-                : monospaceFamilies.FirstOrDefault(f => f.Source == current.PreviewCodeFontFamily);
+            _monospaceFamilies = monospaceFamilies;
+            _normalTextFamilies = normalTextFamilies;
+            ShowSettings(current);
 
             EditorFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewNormalFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewCodeFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
         }
 
+        // Re-selects the three pickers to match settings changed from outside this window (a
+        // reset). Each SelectedItem assignment fires SelectionChanged; without the guard every
+        // one would push a half-updated FontFamilySettings back out to be applied and saved.
+        public void ShowSettings(FontFamilySettings settings)
+        {
+            _isUpdatingSelection = true;
+            try
+            {
+                EditorFontComboBox.SelectedItem = _monospaceFamilies.FirstOrDefault(f => f.Source == settings.EditorFontFamily);
+                PreviewNormalFontComboBox.SelectedItem = settings.PreviewNormalFontFamily == null
+                    ? DefaultSentinel
+                    : _normalTextFamilies.FirstOrDefault(f => f.Source == settings.PreviewNormalFontFamily);
+                PreviewCodeFontComboBox.SelectedItem = settings.PreviewCodeFontFamily == null
+                    ? DefaultSentinel
+                    : _monospaceFamilies.FirstOrDefault(f => f.Source == settings.PreviewCodeFontFamily);
+            }
+            finally
+            {
+                _isUpdatingSelection = false;
+            }
+        }
+
+        private void ResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(this, "Reset fonts and font sizes to their defaults?", "Scratchpad",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                ResetRequested?.Invoke();
+            }
+        }
+
         private void RaiseSettingsChanged()
         {
+            if (_isUpdatingSelection)
+            {
+                return;
+            }
+
             SettingsChanged?.Invoke(new FontFamilySettings
             {
                 EditorFontFamily = (EditorFontComboBox.SelectedItem as FontFamily)?.Source,

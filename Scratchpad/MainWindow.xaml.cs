@@ -253,6 +253,7 @@ namespace Scratchpad
             settingsWindow.Owner = this;
             settingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             settingsWindow.SettingsChanged += OnFontFamilySettingsChanged;
+            settingsWindow.ResetRequested += OnResetRequested;
             settingsWindow.Closed += (s, args) => _settingsWindow = null;
             _settingsWindow = settingsWindow;
             settingsWindow.Show();
@@ -267,6 +268,26 @@ namespace Scratchpad
                 ApplyPreviewFonts();
             }
             _fontFamilyStore.Save(_fontFamilySettings);
+        }
+
+        // Leaves window placement, always-on-top and preview mode alone — only fonts and font
+        // sizes reset. Font sizes are saved here rather than waiting for the usual on-hide save.
+        private void OnResetRequested()
+        {
+            _fontSizeSettings = FontSizeStore.Defaults;
+            ApplyEditorFontSize();
+            ApplyPreviewFontSize();
+            _fontSizeStore.Save(_fontSizeSettings);
+
+            _fontFamilySettings = FontFamilyStore.Defaults;
+            ApplyEditorFontFamily();
+            if (PreviewToggleButton.IsChecked == true)
+            {
+                ApplyPreviewFonts();
+            }
+            _fontFamilyStore.Save(_fontFamilySettings);
+
+            _settingsWindow?.ShowSettings(_fontFamilySettings);
         }
 
         private void ApplyEditorFontFamily()
