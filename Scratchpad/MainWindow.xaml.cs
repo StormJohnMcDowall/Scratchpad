@@ -235,6 +235,11 @@ namespace Scratchpad
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
             var settingsWindow = new SettingsWindow(_fontFamilySettings, FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
+            // Without an Owner, Windows places the window at its default cascade position
+            // (top-left), unrelated to wherever the user has parked Scratchpad. Owning it also
+            // keeps it above an always-on-top main window and hides it alongside the main window.
+            settingsWindow.Owner = this;
+            settingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             settingsWindow.SettingsChanged += OnFontFamilySettingsChanged;
             settingsWindow.Show();
         }
