@@ -30,12 +30,13 @@ namespace Scratchpad
             _themeManager = themeManager;
             // Brushes elsewhere follow the swap on their own (DynamicResource); the preview's
             // dark overrides are per-element local values, so they need re-walking.
-            _themeManager.ThemeChanged += _ =>
+            _themeManager.ThemeChanged += theme =>
             {
                 if (PreviewToggleButton.IsChecked == true)
                 {
                     ApplyPreviewTheme();
                 }
+                _settingsWindow?.ApplyTheme(theme);
             };
             _autosave = new DebouncedAutosaveCoordinator(_documentStore.Save, TimeSpan.FromMilliseconds(500));
             // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
@@ -260,7 +261,8 @@ namespace Scratchpad
                 return;
             }
 
-            var settingsWindow = new SettingsWindow(_fontFamilySettings, FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
+            var settingsWindow = new SettingsWindow(_fontFamilySettings, _themeManager.Preference, _themeManager.Current,
+                FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
             // Without an Owner, Windows places the window at its default cascade position
             // (top-left), unrelated to wherever the user has parked Scratchpad. Owning it also
             // keeps it above an always-on-top main window and hides it alongside the main window.
@@ -268,6 +270,7 @@ namespace Scratchpad
             settingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             settingsWindow.SettingsChanged += OnFontFamilySettingsChanged;
             settingsWindow.ResetRequested += OnResetRequested;
+            settingsWindow.ThemePreferenceChanged += preference => _themeManager.SetPreference(preference);
             settingsWindow.Closed += (s, args) => _settingsWindow = null;
             _settingsWindow = settingsWindow;
             settingsWindow.Show();
@@ -284,8 +287,8 @@ namespace Scratchpad
             _fontFamilyStore.Save(_fontFamilySettings);
         }
 
-        // Leaves window placement, always-on-top and preview mode alone — only fonts and font
-        // sizes reset. Font sizes are saved here rather than waiting for the usual on-hide save.
+        // Leaves window placement, always-on-top and preview mode alone — fonts, font sizes and
+        // theme reset. Font sizes are saved here rather than waiting for the usual on-hide save.
         private void OnResetRequested()
         {
             _fontSizeSettings = FontSizeStore.Defaults;
@@ -301,7 +304,9 @@ namespace Scratchpad
             }
             _fontFamilyStore.Save(_fontFamilySettings);
 
-            _settingsWindow?.ShowSettings(_fontFamilySettings);
+            _themeManager.SetPreference(ThemeStore.Defaults.Preference);
+
+            _settingsWindow?.ShowSettings(_fontFamilySettings, _themeManager.Preference);
         }
 
         private void ApplyEditorFontFamily()
