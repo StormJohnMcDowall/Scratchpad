@@ -20,12 +20,14 @@ namespace Scratchpad
         private readonly FontFamilyStore _fontFamilyStore = new FontFamilyStore(FontFamilyStore.DefaultFilePath);
         private FontFamilySettings _fontFamilySettings;
         private SettingsWindow _settingsWindow;
+        private readonly ThemeManager _themeManager;
         private readonly DebouncedAutosaveCoordinator _autosave;
         private bool _isExiting;
 
-        public MainWindow()
+        public MainWindow(ThemeManager themeManager)
         {
             InitializeComponent();
+            _themeManager = themeManager;
             _autosave = new DebouncedAutosaveCoordinator(_documentStore.Save, TimeSpan.FromMilliseconds(500));
             // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
             // between what's rendered here and what gets toggled there.
@@ -161,7 +163,9 @@ namespace Scratchpad
                 return;
             }
 
-            PreviewViewer.Document.Background = (Brush)FindResource("PostItBackgroundBrush");
+            // A resource reference rather than a one-off lookup, so a theme switch while the
+            // preview is showing re-colours it too.
+            PreviewViewer.Document.SetResourceReference(FlowDocument.BackgroundProperty, "PostItBackgroundBrush");
         }
 
         private void AdjustFontSize(int direction)

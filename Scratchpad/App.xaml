@@ -4,6 +4,12 @@
              xmlns:local="clr-namespace:Scratchpad"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
-
+        <!-- ThemeManager swaps this for Themes/Dark.xaml at startup and whenever the theme
+             changes; Light is merged here so every brush key exists from the first parse. -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Light.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

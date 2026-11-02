@@ -1,0 +1,22 @@
+<!-- "Dark Post-it" (design option A): the same note at night — deep olive-brown paper with
+     pale-yellow ink. Same brush keys as Light.xaml, plus dark-only brushes and implicit styles
+     for controls that use Windows' own colours in light mode. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="PostItBackgroundBrush" Color="#3A3420" />
+    <SolidColorBrush x:Key="PostItToolbarBrush" Color="#2F2A19" />
+    <SolidColorBrush x:Key="PostItBorderBrush" Color="#5A5130" />
+    <SolidColorBrush x:Key="PostItButtonBrush" Color="#4A4228" />
+    <SolidColorBrush x:Key="PostItButtonHoverBrush" Color="#6A5C24" />
+    <SolidColorBrush x:Key="PostItButtonPressedBrush" Color="#8A7220" />
+    <SolidColorBrush x:Key="PostItTextBrush" Color="#F3E6A6" />
+    <SolidColorBrush x:Key="PostItCheckedTextBrush" Color="#FFF3C4" />
+
+    <SolidColorBrush x:Key="PostItSelectionBrush" Color="#E0C04A" />
+    <SolidColorBrush x:Key="PostItScrollThumbBrush" Color="#5A5130" />
+    <SolidColorBrush x:Key="PostItScrollThumbHoverBrush" Color="#8A7220" />
+    <SolidColorBrush x:Key="PreviewCodeBackgroundBrush" Color="#2F2A19" />
+    <SolidColorBrush x:Key="PreviewLinkBrush" Color="#E8C547" />
+    <SolidColorBrush x:Key="PreviewQuoteBorderBrush" Color="#8A7220" />
+    <SolidColorBrush x:Key="PreviewTableBorderBrush" Color="#5A5130" />
+</ResourceDictionary>

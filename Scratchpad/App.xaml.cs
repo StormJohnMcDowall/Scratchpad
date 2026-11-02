@@ -19,7 +19,19 @@ namespace Scratchpad
                 return;
             }
 
-            var mainWindow = new MainWindow();
+            // Before MainWindow exists, so a dark start never flashes the light palette first.
+            var themeManager = new ThemeManager(new ThemeStore(ThemeStore.DefaultFilePath), new RegistryPersonalizeKey());
+            try
+            {
+                themeManager.Start();
+            }
+            catch
+            {
+                // Theme is cosmetic: a failure leaves the light palette from App.xaml in place
+                // and must never stop the app starting.
+            }
+
+            var mainWindow = new MainWindow(themeManager);
 
             // Start listening before any slower startup work (registry I/O below) so a second
             // launch arriving in that window still reaches this instance instead of timing out.
@@ -46,6 +58,7 @@ namespace Scratchpad
                 onExitRequested: () =>
                 {
                     mainWindow.MarkExiting();
+                    themeManager.Dispose();
                     tray.Dispose();
                     guard.Dispose();
                     Shutdown();

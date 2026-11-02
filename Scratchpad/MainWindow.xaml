@@ -14,19 +14,13 @@
         <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0" UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
     <Window.Resources>
-        <SolidColorBrush x:Key="PostItBackgroundBrush" Color="#FFF3A3" />
-        <SolidColorBrush x:Key="PostItToolbarBrush" Color="#FDEE8C" />
-        <SolidColorBrush x:Key="PostItBorderBrush" Color="#E6D978" />
-        <SolidColorBrush x:Key="PostItButtonBrush" Color="#FFE066" />
-        <SolidColorBrush x:Key="PostItButtonHoverBrush" Color="#FFD633" />
-        <SolidColorBrush x:Key="PostItButtonPressedBrush" Color="#F0C419" />
-        <SolidColorBrush x:Key="PostItTextBrush" Color="#5C4F1A" />
-
+        <!-- Brushes live in Themes/Light.xaml / Themes/Dark.xaml (merged into App.Resources)
+             and are referenced with DynamicResource so a theme switch re-colours live. -->
         <Style x:Key="PostItButtonBaseStyle" TargetType="{x:Type ButtonBase}">
-            <Setter Property="Background" Value="{StaticResource PostItButtonBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource PostItBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource PostItButtonBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource PostItBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="{StaticResource PostItTextBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -39,10 +33,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource PostItButtonHoverBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource PostItButtonHoverBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="{StaticResource PostItButtonPressedBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource PostItButtonPressedBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -53,13 +47,14 @@
         <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PostItButtonBaseStyle}">
             <Style.Triggers>
                 <Trigger Property="IsChecked" Value="True">
-                    <Setter Property="Background" Value="{StaticResource PostItButtonPressedBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource PostItButtonPressedBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource PostItCheckedTextBrush}" />
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
     <DockPanel>
-        <Grid DockPanel.Dock="Top" Background="{StaticResource PostItToolbarBrush}" MouseLeftButtonDown="Toolbar_MouseLeftButtonDown">
+        <Grid DockPanel.Dock="Top" Background="{DynamicResource PostItToolbarBrush}" MouseLeftButtonDown="Toolbar_MouseLeftButtonDown">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -68,7 +63,7 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal">
                 <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />
                 <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Always on Top" Click="AlwaysOnTopToggleButton_Click" Padding="8,4" Margin="4" />
-                <Border Width="1" Margin="4,6" Background="{StaticResource PostItBorderBrush}" />
+                <Border Width="1" Margin="4,6" Background="{DynamicResource PostItBorderBrush}" />
                 <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
                 <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
                 <Button x:Name="SettingsButton" Content="Settings" Click="SettingsButton_Click" Padding="8,4" Margin="2,4" Focusable="False" />
@@ -81,11 +76,11 @@
                      AcceptsTab="True"
                      TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
-                     Background="{StaticResource PostItBackgroundBrush}"
-                     Foreground="{StaticResource PostItTextBrush}"
+                     Background="{DynamicResource PostItBackgroundBrush}"
+                     Foreground="{DynamicResource PostItTextBrush}"
                      BorderThickness="0"
                      TextChanged="EditorTextBox_TextChanged" />
-            <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed" Background="{StaticResource PostItBackgroundBrush}">
+            <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed" Background="{DynamicResource PostItBackgroundBrush}">
                 <markdig:MarkdownViewer x:Name="PreviewViewer" />
             </ScrollViewer>
         </Grid>
