@@ -45,9 +45,9 @@ namespace Scratchpad
             // between what's rendered here and what gets toggled there.
             PreviewViewer.Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
 
-            // Loaded here, not in Window_Loaded: this app always starts hidden in the tray
-            // (App.xaml.cs never calls Show()), so Window_Loaded never runs on the common
-            // exit-without-opening path. Loading in the constructor means _fontSizeSettings
+            // Loaded here, not in Window_Loaded: by default this app starts hidden in the tray
+            // (App.xaml.cs only calls Show() when "Show the window when Scratchpad starts" is
+            // on), so Window_Loaded never runs on the common exit-without-opening path. Loading in the constructor means _fontSizeSettings
             // always reflects the persisted value by the time Window_Closing saves it back,
             // instead of silently overwriting a custom size with FontSizing.Default.
             _fontSizeSettings = _fontSizeStore.Load();
