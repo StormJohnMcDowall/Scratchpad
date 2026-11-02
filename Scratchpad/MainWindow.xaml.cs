@@ -200,6 +200,98 @@ namespace Scratchpad
             }
         }
 
+        private void PreviewScrollViewer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // A task checkbox toggles on each click, so a double-click on one is two toggles, not
+            // a request to edit. Double-clicking the scrollbar isn't either.
+            if (IsWithin<CheckBox>(e.OriginalSource) || IsWithin<System.Windows.Controls.Primitives.ScrollBar>(e.OriginalSource))
+            {
+                return;
+            }
+
+            e.Handled = true;
+            try
+            {
+                SwitchToEditorAt(ClickedSourceOffset(e));
+            }
+            catch (Exception)
+            {
+                SwitchToEditorAt(null);
+            }
+        }
+
+        // Where in the source a double-click in the preview landed: the clicked character when it
+        // can be found, else the start of the clicked block, else the end of the note for space
+        // below the last block. Null when the preview and source don't line up.
+        private int? ClickedSourceOffset(MouseButtonEventArgs e)
+        {
+            var text = EditorTextBox.Text;
+            var units = _previewNavigator.GetUnits();
+            var map = PreviewSourceMap.Build(text);
+            if (units.Count != map.Count || units.Count == 0)
+            {
+                return null;
+            }
+
+            var point = _previewNavigator.ToExtent(e.GetPosition(PreviewViewer));
+            var index = -1;
+            for (var element = e.OriginalSource as DependencyObject; element is ContentElement; element = LogicalTreeHelper.GetParent(element))
+            {
+                if (element is Block block)
+                {
+                    index = IndexOfUnit(units, block);
+                    if (index >= 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (index < 0)
+            {
+                if (point == null)
+                {
+                    return null;
+                }
+                index = _previewNavigator.UnitIndexAtExtentY(units, point.Value.Y);
+                if (index < 0)
+                {
+                    return text.Length;
+                }
+            }
+
+            if (e.OriginalSource is Run run && point != null)
+            {
+                return PreviewSourceMap.LocateInBlock(text, map[index], run.Text, _previewNavigator.OffsetInRun(run, point.Value));
+            }
+            return map[index].Start;
+        }
+
+        private static int IndexOfUnit(IReadOnlyList<Block> units, Block block)
+        {
+            for (var i = 0; i < units.Count; i++)
+            {
+                if (ReferenceEquals(units[i], block))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static bool IsWithin<T>(object source) where T : DependencyObject
+        {
+            for (var element = source as DependencyObject; element != null;
+                 element = element is Visual ? VisualTreeHelper.GetParent(element) : LogicalTreeHelper.GetParent(element))
+            {
+                if (element is T)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // The source offset of the block at the top of the preview, or null when the rendered
         // blocks don't line up with the source map (then nothing moves).
         private int? TopPreviewBlockStart()

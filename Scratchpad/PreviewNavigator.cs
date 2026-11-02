@@ -125,6 +125,30 @@ namespace Scratchpad
             }
         }
 
+        /// <summary>
+        /// The character offset within the run nearest to (at or left of) the point, on the line
+        /// the point is on; 0 when the run can't be measured.
+        /// </summary>
+        public int OffsetInRun(Run run, Point pointInExtent)
+        {
+            var best = 0;
+            var length = run.Text.Length;
+            for (var i = 0; i < length; i++)
+            {
+                var rect = CharacterRectInExtent(run.ContentStart.GetPositionAtOffset(i));
+                if (rect == null)
+                {
+                    return 0;
+                }
+                var r = rect.Value;
+                if (pointInExtent.Y >= r.Top && pointInExtent.Y <= r.Bottom && r.Left <= pointInExtent.X)
+                {
+                    best = i;
+                }
+            }
+            return best;
+        }
+
         private static void CollectUnits(BlockCollection blocks, List<Block> units)
         {
             foreach (var block in blocks)
