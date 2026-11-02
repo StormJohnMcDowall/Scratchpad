@@ -568,16 +568,27 @@ namespace Scratchpad
         // Markdig.Wpf renders task-list items as real (but disabled) CheckBox controls — this
         // enables them and wires each one, by its position among all checkboxes in document
         // order, to Scratchpad.Core.TaskListToggler so a click edits the underlying markdown.
+        // Markdig.Wpf only rebuilds the document when the Markdown text changes, so toggling the
+        // preview off and on without an edit re-wires the *same* checkboxes. Removing the handler
+        // before adding it keeps exactly one per checkbox; with two, a single click toggled the
+        // task and then immediately toggled it back. The index rides on Tag for the same reason —
+        // a fresh closure per wiring would make each subscription a distinct, unremovable handler.
         private void WireTaskListCheckBoxes()
         {
             var index = 0;
             foreach (var checkBox in FindTaskListCheckBoxes(PreviewViewer.Document.Blocks))
             {
                 checkBox.IsEnabled = true;
-                var taskIndex = index;
-                checkBox.Click += (s, e) => OnTaskListCheckBoxClicked(taskIndex);
+                checkBox.Tag = index;
+                checkBox.Click -= TaskListCheckBox_Click;
+                checkBox.Click += TaskListCheckBox_Click;
                 index++;
             }
+        }
+
+        private void TaskListCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            OnTaskListCheckBoxClicked((int)((CheckBox)sender).Tag);
         }
 
         private void OnTaskListCheckBoxClicked(int taskIndex)
