@@ -13,4 +13,16 @@
     <SolidColorBrush x:Key="PostItCheckedTextBrush" Color="#5C4F1A" />
     <SolidColorBrush x:Key="PostItScrollThumbBrush" Color="#E6D978" />
     <SolidColorBrush x:Key="PostItScrollThumbHoverBrush" Color="#F0C419" />
+
+    <!-- Keyboard-focus outline for the main window's Post-it buttons (their custom style
+         replaces the system one, which would otherwise supply it): the standard black dots. -->
+    <Style x:Key="PostItFocusVisualStyle">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Stroke="Black" StrokeThickness="1" StrokeDashArray="1 2" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

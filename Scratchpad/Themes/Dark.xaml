@@ -22,7 +22,21 @@
     <SolidColorBrush x:Key="PreviewCodeBackgroundBrush" Color="#2F2A19" />
     <SolidColorBrush x:Key="PreviewLinkBrush" Color="#E8C547" />
     <SolidColorBrush x:Key="PreviewQuoteBorderBrush" Color="#8A7220" />
+    <SolidColorBrush x:Key="PreviewQuoteTextBrush" Color="#B8AC78" />
     <SolidColorBrush x:Key="PreviewTableBorderBrush" Color="#5A5130" />
+
+    <!-- Keyboard-focus outline: the system's black dots vanish on dark paper. Used by every
+         focusable control styled in this file, and by MainWindow's buttons (via Light.xaml's
+         same-named key in light). -->
+    <Style x:Key="PostItFocusVisualStyle">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Stroke="{DynamicResource PostItTextBrush}" StrokeThickness="1" StrokeDashArray="1 2" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <!-- Scrollbars everywhere in dark (in light, only the main window gets them). -->
     <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource PostItScrollBarStyle}" />
@@ -116,6 +130,7 @@
          TaskListStyleKey style, whose only setter (this margin) is carried over. -->
     <Style x:Key="PostItTaskListCheckBoxStyle" TargetType="{x:Type CheckBox}">
         <Setter Property="Margin" Value="0,0,0,-2" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource PostItFocusVisualStyle}" />
         <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
         <Setter Property="Template">
             <Setter.Value>
@@ -181,6 +196,7 @@
     </Style>
 
     <Style TargetType="{x:Type Button}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource PostItFocusVisualStyle}" />
         <Setter Property="Background" Value="{DynamicResource PostItButtonBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource PostItBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
@@ -231,6 +247,7 @@
     <!-- Mirrors the system ComboBox template's parts (PART_Popup, SelectionBoxItem bindings) so
          selection, DisplayMemberPath and keyboard behaviour are unchanged — only the colours. -->
     <Style TargetType="{x:Type ComboBox}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource PostItFocusVisualStyle}" />
         <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />

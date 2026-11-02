@@ -17,6 +17,7 @@
         <!-- Brushes live in Themes/Light.xaml / Themes/Dark.xaml (merged into App.Resources)
              and are referenced with DynamicResource so a theme switch re-colours live. -->
         <Style x:Key="PostItButtonBaseStyle" TargetType="{x:Type ButtonBase}">
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource PostItFocusVisualStyle}" />
             <Setter Property="Background" Value="{DynamicResource PostItButtonBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource PostItBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />

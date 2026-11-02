@@ -409,10 +409,12 @@ namespace Scratchpad
 
             var dark = _themeManager.Current == AppTheme.Dark;
             SetOrClearReference(PreviewViewer.Document, TextElement.ForegroundProperty, "PostItTextBrush", dark);
-            ApplyPreviewTheme(PreviewViewer.Document.Blocks, dark);
+            ApplyPreviewTheme(PreviewViewer.Document.Blocks, dark, "PostItTextBrush");
         }
 
-        private void ApplyPreviewTheme(IEnumerable<Block> blocks, bool dark)
+        // textBrushKey is the ink for this level: body text, or the dimmer quote ink inside a
+        // block quote (light mode's quote style greys its text; this keeps that distinction).
+        private void ApplyPreviewTheme(IEnumerable<Block> blocks, bool dark, string textBrushKey)
         {
             var codeBlockStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeBlockStyleKey) as Style;
             var codeStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeStyleKey) as Style;
@@ -425,7 +427,7 @@ namespace Scratchpad
                 {
                     // Every paragraph, not just the document: heading styles may set their own
                     // Foreground, which a document-level value wouldn't override.
-                    SetOrClearReference(paragraph, TextElement.ForegroundProperty, "PostItTextBrush", dark);
+                    SetOrClearReference(paragraph, TextElement.ForegroundProperty, textBrushKey, dark);
 
                     if (codeBlockStyle != null && ReferenceEquals(paragraph.Style, codeBlockStyle))
                     {
@@ -440,7 +442,7 @@ namespace Scratchpad
                         }
                         else if (inline is Run && codeStyle != null && ReferenceEquals(inline.Style, codeStyle))
                         {
-                            SetOrClearReference(inline, TextElement.ForegroundProperty, "PostItTextBrush", dark);
+                            SetOrClearReference(inline, TextElement.ForegroundProperty, textBrushKey, dark);
                             SetOrClearReference(inline, TextElement.BackgroundProperty, "PreviewCodeBackgroundBrush", dark);
                         }
                         else if (inline is InlineUIContainer container && container.Child is CheckBox checkBox)
@@ -470,17 +472,21 @@ namespace Scratchpad
                 }
                 else if (block is Section section)
                 {
+                    var sectionTextBrushKey = textBrushKey;
                     if (quoteStyle != null && ReferenceEquals(section.Style, quoteStyle))
                     {
+                        sectionTextBrushKey = "PreviewQuoteTextBrush";
                         SetOrClearReference(section, Block.BorderBrushProperty, "PreviewQuoteBorderBrush", dark);
+                        // Also the section itself, so list bullets inside a quote dim to match.
+                        SetOrClearReference(section, TextElement.ForegroundProperty, sectionTextBrushKey, dark);
                     }
-                    ApplyPreviewTheme(section.Blocks, dark);
+                    ApplyPreviewTheme(section.Blocks, dark, sectionTextBrushKey);
                 }
                 else if (block is List list)
                 {
                     foreach (var item in list.ListItems)
                     {
-                        ApplyPreviewTheme(item.Blocks, dark);
+                        ApplyPreviewTheme(item.Blocks, dark, textBrushKey);
                     }
                 }
                 else if (block is Table table)
@@ -495,7 +501,7 @@ namespace Scratchpad
                         foreach (var cell in row.Cells)
                         {
                             SetOrClearReference(cell, TableCell.BorderBrushProperty, "PreviewTableBorderBrush", dark);
-                            ApplyPreviewTheme(cell.Blocks, dark);
+                            ApplyPreviewTheme(cell.Blocks, dark, textBrushKey);
                         }
                     }
                 }

@@ -119,6 +119,15 @@ namespace Scratchpad
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
+        private const uint SwpNoSize = 0x0001;
+        private const uint SwpNoMove = 0x0002;
+        private const uint SwpNoZOrder = 0x0004;
+        private const uint SwpNoActivate = 0x0010;
+        private const uint SwpFrameChanged = 0x0020;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hwnd, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
+
         // Best-effort: older Windows builds reject both attributes, and the title bar simply
         // stays light. Never allowed to throw — it's cosmetic.
         private void SetDarkTitleBar(bool dark)
@@ -136,6 +145,10 @@ namespace Scratchpad
                 {
                     DwmSetWindowAttribute(hwnd, DwmwaUseImmersiveDarkModeBefore20H1, ref value, sizeof(int));
                 }
+
+                // An already-visible window otherwise keeps its old title bar until it is next
+                // deactivated; a frame-changed no-op repositioning makes Windows repaint it now.
+                SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SwpNoSize | SwpNoMove | SwpNoZOrder | SwpNoActivate | SwpFrameChanged);
             }
             catch
             {
