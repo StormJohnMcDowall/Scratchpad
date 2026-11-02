@@ -19,6 +19,8 @@ namespace Scratchpad
         private FontSizeSettings _fontSizeSettings;
         private readonly FontFamilyStore _fontFamilyStore = new FontFamilyStore(FontFamilyStore.DefaultFilePath);
         private FontFamilySettings _fontFamilySettings;
+        private readonly StartupWindowStore _startupWindowStore = new StartupWindowStore(StartupWindowStore.DefaultFilePath);
+        private StartupWindowSettings _startupWindowSettings;
         private SettingsWindow _settingsWindow;
         private readonly ThemeManager _themeManager;
         private readonly DebouncedAutosaveCoordinator _autosave;
@@ -57,7 +59,13 @@ namespace Scratchpad
             // the named font still exists on this machine.
             _fontFamilySettings = ValidateAgainstInstalledFonts(_fontFamilyStore.Load());
             ApplyEditorFontFamily();
+
+            _startupWindowSettings = _startupWindowStore.Load();
         }
+
+        // Read by App.OnStartup once everything else is in place; changing it in Settings only
+        // affects the next start.
+        public bool ShowWindowOnStartup => _startupWindowSettings.ShowWindowOnStartup;
 
         private static FontFamilySettings ValidateAgainstInstalledFonts(FontFamilySettings settings)
         {
@@ -262,7 +270,7 @@ namespace Scratchpad
             }
 
             var settingsWindow = new SettingsWindow(_fontFamilySettings, _themeManager.Preference, _themeManager.Current,
-                FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
+                _startupWindowSettings.ShowWindowOnStartup, FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
             // Without an Owner, Windows places the window at its default cascade position
             // (top-left), unrelated to wherever the user has parked Scratchpad. Owning it also
             // keeps it above an always-on-top main window and hides it alongside the main window.
@@ -270,6 +278,11 @@ namespace Scratchpad
             settingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             settingsWindow.SettingsChanged += OnFontFamilySettingsChanged;
             settingsWindow.ResetRequested += OnResetRequested;
+            settingsWindow.ShowWindowOnStartupChanged += show =>
+            {
+                _startupWindowSettings = new StartupWindowSettings { ShowWindowOnStartup = show };
+                _startupWindowStore.Save(_startupWindowSettings);
+            };
             // Deferred: applying swaps the palette, which re-templates the very combo box whose
             // SelectionChanged is still on the stack — let that handler finish first.
             settingsWindow.ThemePreferenceChanged += preference =>
@@ -290,8 +303,8 @@ namespace Scratchpad
             _fontFamilyStore.Save(_fontFamilySettings);
         }
 
-        // Leaves window placement, always-on-top and preview mode alone — fonts, font sizes and
-        // theme reset. Font sizes are saved here rather than waiting for the usual on-hide save.
+        // Leaves window placement, always-on-top and preview mode alone — fonts, font sizes,
+        // theme and show-on-startup reset. Font sizes are saved here rather than waiting for the usual on-hide save.
         private void OnResetRequested()
         {
             _fontSizeSettings = FontSizeStore.Defaults;
@@ -309,7 +322,10 @@ namespace Scratchpad
 
             _themeManager.SetPreference(ThemeStore.Defaults.Preference);
 
-            _settingsWindow?.ShowSettings(_fontFamilySettings, _themeManager.Preference);
+            _startupWindowSettings = StartupWindowStore.Defaults;
+            _startupWindowStore.Save(_startupWindowSettings);
+
+            _settingsWindow?.ShowSettings(_fontFamilySettings, _themeManager.Preference, _startupWindowSettings.ShowWindowOnStartup);
         }
 
         private void ApplyEditorFontFamily()

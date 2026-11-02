@@ -27,10 +27,11 @@ namespace Scratchpad
 
         public event Action<FontFamilySettings> SettingsChanged;
         public event Action<ThemePreference> ThemePreferenceChanged;
+        public event Action<bool> ShowWindowOnStartupChanged;
         public event Action ResetRequested;
 
         public SettingsWindow(FontFamilySettings current, ThemePreference currentThemePreference, AppTheme currentTheme,
-            IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
+            bool showWindowOnStartup, IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
         {
             InitializeComponent();
             _theme = currentTheme;
@@ -46,9 +47,11 @@ namespace Scratchpad
 
             _monospaceFamilies = monospaceFamilies;
             _normalTextFamilies = normalTextFamilies;
-            ShowSettings(current, currentThemePreference);
+            ShowSettings(current, currentThemePreference, showWindowOnStartup);
 
             ThemeComboBox.SelectionChanged += (s, e) => RaiseThemePreferenceChanged();
+            ShowOnStartupCheckBox.Checked += (s, e) => RaiseShowWindowOnStartupChanged();
+            ShowOnStartupCheckBox.Unchecked += (s, e) => RaiseShowWindowOnStartupChanged();
             EditorFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewNormalFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewCodeFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
@@ -57,11 +60,12 @@ namespace Scratchpad
         // Re-selects the pickers to match settings changed from outside this window (a reset).
         // Each SelectedItem assignment fires SelectionChanged; without the guard every one would
         // push a half-updated value back out to be applied and saved.
-        public void ShowSettings(FontFamilySettings settings, ThemePreference themePreference)
+        public void ShowSettings(FontFamilySettings settings, ThemePreference themePreference, bool showWindowOnStartup)
         {
             _isUpdatingSelection = true;
             try
             {
+                ShowOnStartupCheckBox.IsChecked = showWindowOnStartup;
                 ThemeComboBox.SelectedItem = ThemeComboBox.Items.Cast<ComboBoxItem>()
                     .FirstOrDefault(item => (ThemePreference)item.Tag == themePreference);
                 EditorFontComboBox.SelectedItem = _monospaceFamilies.FirstOrDefault(f => f.Source == settings.EditorFontFamily);
@@ -137,6 +141,16 @@ namespace Scratchpad
             {
                 // See comment above.
             }
+        }
+
+        private void RaiseShowWindowOnStartupChanged()
+        {
+            if (_isUpdatingSelection)
+            {
+                return;
+            }
+
+            ShowWindowOnStartupChanged?.Invoke(ShowOnStartupCheckBox.IsChecked == true);
         }
 
         private void RaiseThemePreferenceChanged()

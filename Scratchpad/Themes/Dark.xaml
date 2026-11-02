@@ -145,6 +145,13 @@
         </Setter>
     </Style>
 
+    <!-- Ordinary checkboxes (Settings' "Show the window…"): the system one paints dark text on
+         this dark paper. The preview's task-list boxes carry an explicit style, so this never
+         reaches them. -->
+    <Style TargetType="{x:Type CheckBox}" BasedOn="{StaticResource PostItTaskListCheckBoxStyle}">
+        <Setter Property="Margin" Value="0" />
+    </Style>
+
     <!-- Settings window controls. MainWindow's own local implicit Button style still wins there,
          so this Button style only reaches the Settings window's Reset button. -->
     <Style TargetType="{x:Type Label}">
