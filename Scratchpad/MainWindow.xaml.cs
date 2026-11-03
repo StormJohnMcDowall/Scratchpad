@@ -920,6 +920,21 @@ namespace Scratchpad
             }
         }
 
+        // Markdig.Wpf's FlowDocumentScrollViewer has its own inner ScrollViewer. Given unlimited
+        // height by PreviewScrollViewer it never scrolls, but WPF ScrollViewers mark every wheel
+        // event handled regardless, so the wheel never reached the outer viewer that actually
+        // scrolls. Catching it here, while it tunnels down, scrolls the outer one directly.
+        // Ctrl+wheel never gets here: Window_PreviewMouseWheel tunnels first and handles it.
+        private void PreviewScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            // Same distance per notch as a ScrollViewer's own wheel handling (WheelScrollLines
+            // lines of 16px), scaled by Delta so high-resolution wheels and touchpads scroll
+            // smoothly.
+            var distance = e.Delta / (double)Mouse.MouseWheelDeltaForOneLine * SystemParameters.WheelScrollLines * 16;
+            PreviewScrollViewer.ScrollToVerticalOffset(PreviewScrollViewer.VerticalOffset - distance);
+            e.Handled = true;
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // Publish any edit still waiting out its debounce delay — otherwise up to 500ms of

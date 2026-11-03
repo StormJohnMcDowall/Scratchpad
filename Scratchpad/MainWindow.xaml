@@ -82,7 +82,7 @@
                      Foreground="{DynamicResource PostItTextBrush}"
                      BorderThickness="0"
                      TextChanged="EditorTextBox_TextChanged" />
-            <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed" MouseDoubleClick="PreviewScrollViewer_MouseDoubleClick" Background="{DynamicResource PostItBackgroundBrush}">
+            <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed" MouseDoubleClick="PreviewScrollViewer_MouseDoubleClick" PreviewMouseWheel="PreviewScrollViewer_PreviewMouseWheel" Background="{DynamicResource PostItBackgroundBrush}">
                 <markdig:MarkdownViewer x:Name="PreviewViewer" />
             </ScrollViewer>
         </Grid>
