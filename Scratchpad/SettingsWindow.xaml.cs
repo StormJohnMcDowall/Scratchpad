@@ -175,9 +175,33 @@ namespace Scratchpad
             DateFormatChanged?.Invoke(DateFormatTextBox.Text);
         }
 
+        // Says why the example differs from what was typed when the default stands in. The
+        // warning colour is a resource reference so a theme switch re-colours it; clearing it
+        // (rather than setting black) hands the text back to the window's own Foreground.
         private void UpdateDateExample()
         {
-            DateExampleTextBlock.Text = "Today: " + DateStamp.Format(DateFormatTextBox.Text, DateTime.Now, CultureInfo.CurrentCulture);
+            var stamp = DateStamp.Format(DateFormatTextBox.Text, DateTime.Now, CultureInfo.CurrentCulture, out var status);
+            switch (status)
+            {
+                case DateFormatStatus.Blank:
+                    DateExampleTextBlock.Text = "Using the default: " + stamp;
+                    break;
+                case DateFormatStatus.Rejected:
+                    DateExampleTextBlock.Text = "Not a valid format, so Date uses: " + stamp;
+                    break;
+                default:
+                    DateExampleTextBlock.Text = "Today: " + stamp;
+                    break;
+            }
+
+            if (status == DateFormatStatus.Rejected)
+            {
+                DateExampleTextBlock.SetResourceReference(TextBlock.ForegroundProperty, "SettingsWarningBrush");
+            }
+            else
+            {
+                DateExampleTextBlock.ClearValue(TextBlock.ForegroundProperty);
+            }
         }
 
         private void RaiseShowWindowOnStartupChanged()

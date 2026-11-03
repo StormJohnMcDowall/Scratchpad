@@ -25,6 +25,7 @@
     <SolidColorBrush x:Key="PreviewQuoteBorderBrush" Color="#8A7220" />
     <SolidColorBrush x:Key="PreviewQuoteTextBrush" Color="#B8AC78" />
     <SolidColorBrush x:Key="PreviewTableBorderBrush" Color="#5A5130" />
+    <SolidColorBrush x:Key="SettingsWarningBrush" Color="#F2A07B" />
 
     <!-- Keyboard-focus outline: the system's black dots vanish on dark paper. Used by every
          focusable control styled in this file, and by MainWindow's buttons (via Light.xaml's
@@ -106,9 +107,10 @@
 
     <!-- Editor: the caret and selection default to system colours that vanish on dark paper.
          EditorTextBox's own local Background/Foreground still win over this style; the colours
-         here are for other text boxes (Settings' date format), which would otherwise be white. -->
+         here are for other text boxes (Settings' date format), which would otherwise be white.
+         The toolbar shade, not the paper, so that box reads as a box on Settings' paper. -->
     <Style TargetType="{x:Type TextBox}">
-        <Setter Property="Background" Value="{DynamicResource PostItBackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource PostItToolbarBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource PostItBorderBrush}" />
         <Setter Property="CaretBrush" Value="{DynamicResource PostItTextBrush}" />
