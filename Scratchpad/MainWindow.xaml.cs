@@ -899,6 +899,9 @@ namespace Scratchpad
             if (PreviewScrollViewer.IsVisible)
             {
                 SwitchToEditorAt(null);
+                // A selection made before switching to the preview can survive the switch (when
+                // the place can't be kept); replacing text the user can't see would be a surprise.
+                EditorTextBox.Select(EditorTextBox.CaretIndex, 0);
             }
 
             var stamp = DateStamp.Format(_dateFormatSettings.Format, DateTime.Now, CultureInfo.CurrentCulture);
