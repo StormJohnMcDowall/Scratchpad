@@ -14,6 +14,12 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Assets\Scratchpad.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Also a WPF resource: the windows' Icon and the tray icon load it by pack URI. -->
+    <Resource Include="Assets\Scratchpad.ico" />
+  </ItemGroup>
 
 </Project>

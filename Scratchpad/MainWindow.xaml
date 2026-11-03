@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Icon="pack://application:,,,/Assets/Scratchpad.ico"
         Title="Scratchpad" Width="420" Height="520"
         Background="{DynamicResource PostItBackgroundBrush}"
         WindowStyle="None"
