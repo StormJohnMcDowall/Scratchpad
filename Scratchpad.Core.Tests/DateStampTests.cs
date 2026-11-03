@@ -36,4 +36,30 @@ public class DateStampTests
     {
         Assert.Equal("Tue 3 Nov", DateStamp.Format(format, Tuesday, EnGb));
     }
+
+    [Fact]
+    public void Format_ValidFormat_ReportsValid()
+    {
+        Assert.Equal("2026-11-03", DateStamp.Format("yyyy-MM-dd", Tuesday, EnGb, out var status));
+        Assert.Equal(DateFormatStatus.Valid, status);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Format_NullOrWhitespace_ReportsBlank(string format)
+    {
+        Assert.Equal("Tue 3 Nov", DateStamp.Format(format, Tuesday, EnGb, out var status));
+        Assert.Equal(DateFormatStatus.Blank, status);
+    }
+
+    [Theory]
+    [InlineData("%")]
+    [InlineData("ddd \\")]
+    public void Format_InvalidFormat_ReportsRejected(string format)
+    {
+        Assert.Equal("Tue 3 Nov", DateStamp.Format(format, Tuesday, EnGb, out var status));
+        Assert.Equal(DateFormatStatus.Rejected, status);
+    }
 }
