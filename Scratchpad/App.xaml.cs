@@ -55,6 +55,7 @@ namespace Scratchpad
             TrayIconManager tray = null;
             tray = new TrayIconManager(
                 onShowRequested: mainWindow.ShowAndActivate,
+                onSettingsRequested: mainWindow.OpenSettingsFromTray,
                 onExitRequested: () =>
                 {
                     mainWindow.MarkExiting();

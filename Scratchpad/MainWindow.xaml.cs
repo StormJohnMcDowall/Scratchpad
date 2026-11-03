@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Markdig;
 using Scratchpad.Core;
 
@@ -484,7 +485,18 @@ namespace Scratchpad
             Close();
         }
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettings();
+
+        // The tray's Settings… item. Settings centres on this window, so show it first — and
+        // defer opening until after Window_Loaded, which on the first Show() restores the saved
+        // position only after Show() returns; otherwise Settings centres on Windows' default spot.
+        public void OpenSettingsFromTray()
+        {
+            ShowAndActivate();
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(OpenSettings));
+        }
+
+        private void OpenSettings()
         {
             // Only ever one Settings window: a second click brings the existing one forward.
             if (_settingsWindow != null)

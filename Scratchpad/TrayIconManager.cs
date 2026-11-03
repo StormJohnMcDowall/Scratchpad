@@ -9,10 +9,14 @@ namespace Scratchpad
         private readonly NotifyIcon _notifyIcon;
         private readonly Icon _appIcon;
 
-        public TrayIconManager(Action onShowRequested, Action onExitRequested)
+        public TrayIconManager(Action onShowRequested, Action onSettingsRequested, Action onExitRequested)
         {
             var menu = new ContextMenuStrip();
-            menu.Items.Add("Show", null, (s, e) => onShowRequested());
+            // Bold marks Show as what double-clicking the icon does, as Windows' own tray menus do.
+            var showItem = menu.Items.Add("Show", null, (s, e) => onShowRequested());
+            showItem.Font = new Font(menu.Font, FontStyle.Bold);
+            menu.Items.Add("Settings…", null, (s, e) => onSettingsRequested());
+            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Exit", null, (s, e) => onExitRequested());
 
             _appIcon = LoadAppIcon();
@@ -49,6 +53,9 @@ namespace Scratchpad
             }
         }
 
+        // The menu and its bold font are deliberately left to process exit: this runs from inside
+        // the Exit item's own Click, and disposing the menu (or a font it may still paint with)
+        // while it is mid-click risks an ObjectDisposedException on the way out.
         public void Dispose()
         {
             _notifyIcon.Dispose();
