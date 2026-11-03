@@ -4,7 +4,7 @@
         xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Icon="pack://application:,,,/Assets/Scratchpad.ico"
-        Title="Scratchpad" Width="420" Height="520"
+        Title="Scratchpad" Width="420" Height="520" MinWidth="300" MinHeight="150"
         Background="{DynamicResource PostItBackgroundBrush}"
         WindowStyle="None"
         Loaded="Window_Loaded" Closing="Window_Closing"
@@ -58,21 +58,41 @@
     </Window.Resources>
     <DockPanel>
         <Grid DockPanel.Dock="Top" Background="{DynamicResource PostItToolbarBrush}" MouseLeftButtonDown="Toolbar_MouseLeftButtonDown">
+            <Grid.Resources>
+                <!-- Icon buttons: glyphs from Windows' own icon font (Windows 10 and 11), each with
+                     a tooltip naming it and its shortcut, and an accessible name for screen readers. -->
+                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                    <Setter Property="FontSize" Value="14" />
+                    <Setter Property="Width" Value="32" />
+                    <Setter Property="Height" Value="28" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="2,4" />
+                </Style>
+                <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource {x:Type ToggleButton}}">
+                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                    <Setter Property="FontSize" Value="14" />
+                    <Setter Property="Width" Value="32" />
+                    <Setter Property="Height" Value="28" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="2,4" />
+                </Style>
+            </Grid.Resources>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />
-                <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Always on Top" Click="AlwaysOnTopToggleButton_Click" Padding="8,4" Margin="4" />
-                <Button x:Name="DateButton" Content="Date" Click="DateButton_Click" Padding="8,4" Margin="2,4" Focusable="False" ToolTip="Insert today's date (Ctrl+;)" />
+                <ToggleButton x:Name="PreviewToggleButton" Content="&#xE890;" Click="PreviewToggleButton_Click" ToolTip="Preview (Ctrl+E)" AutomationProperties.Name="Preview" />
+                <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="&#xE718;" Click="AlwaysOnTopToggleButton_Click" ToolTip="Always on top (Ctrl+T)" AutomationProperties.Name="Always on top" />
+                <Button x:Name="DateButton" Content="&#xE787;" Click="DateButton_Click" Focusable="False" ToolTip="Insert today's date (Ctrl+;)" AutomationProperties.Name="Insert date" />
                 <Border Width="1" Margin="4,6" Background="{DynamicResource PostItBorderBrush}" />
-                <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
-                <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
-                <Button x:Name="SettingsButton" Content="Settings" Click="SettingsButton_Click" Padding="8,4" Margin="2,4" Focusable="False" />
+                <Button x:Name="ZoomOutButton" Content="&#xE8E7;" Click="ZoomOutButton_Click" Focusable="False" ToolTip="Smaller text (Ctrl+-)" AutomationProperties.Name="Smaller text" />
+                <Button x:Name="ZoomInButton" Content="&#xE8E8;" Click="ZoomInButton_Click" Focusable="False" ToolTip="Larger text (Ctrl++)" AutomationProperties.Name="Larger text" />
+                <Button x:Name="SettingsButton" Content="&#xE713;" Click="SettingsButton_Click" Focusable="False" ToolTip="Settings" AutomationProperties.Name="Settings" />
             </StackPanel>
-            <Button x:Name="HideButton" Grid.Column="2" Content="X" Click="HideButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
+            <Button x:Name="HideButton" Grid.Column="2" Content="&#xE8BB;" FontSize="10" Click="HideButton_Click" Focusable="False" ToolTip="Hide to tray" AutomationProperties.Name="Hide to tray" />
         </Grid>
         <Grid>
             <TextBox x:Name="EditorTextBox"

@@ -115,6 +115,28 @@
         <Setter Property="ContextMenu" Value="{StaticResource PostItEditorContextMenu}" />
     </Style>
 
+    <!-- The toolbar buttons' tooltips: the system's pale box glares on the dark note. -->
+    <Style TargetType="{x:Type ToolTip}">
+        <Setter Property="Background" Value="{DynamicResource PostItToolbarBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PostItBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="HasDropShadow" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToolTip}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="{x:Type FlowDocumentScrollViewer}">
         <Setter Property="ContextMenu" Value="{StaticResource PostItPreviewContextMenu}" />
     </Style>
