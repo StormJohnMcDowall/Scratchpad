@@ -93,7 +93,9 @@ namespace Scratchpad
             var top = CharacterRectInExtent(unit.ContentStart.GetInsertionPosition(LogicalDirection.Forward));
             if (top != null)
             {
-                _scrollViewer.ScrollToVerticalOffset(top.Value.Top);
+                // Less the viewer's margin (the note's text padding), so the block lands below
+                // the padding as in the editor, and the first block leaves it in view.
+                _scrollViewer.ScrollToVerticalOffset(Math.Max(0, top.Value.Top - _viewer.Margin.Top));
             }
         }
 

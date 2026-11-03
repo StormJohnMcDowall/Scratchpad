@@ -367,7 +367,9 @@ namespace Scratchpad
         {
             EditorTextBox.UpdateLayout();
             var rect = EditorTextBox.GetRectFromCharacterIndex(EditorTextBox.CaretIndex);
-            return !rect.IsEmpty && rect.Top >= 0 && rect.Bottom <= EditorTextBox.ViewportHeight;
+            // The rect is relative to the whole TextBox, padding included, so the visible text
+            // ends at the bottom padding rather than at ViewportHeight.
+            return !rect.IsEmpty && rect.Top >= 0 && rect.Bottom <= EditorTextBox.ActualHeight - EditorTextBox.Padding.Bottom;
         }
 
         private void ScrollEditorToCharacter(int index)
