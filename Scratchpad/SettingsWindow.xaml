@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:core="clr-namespace:Scratchpad.Core;assembly=Scratchpad.Core"
         Icon="pack://application:,,,/Assets/Scratchpad.ico"
-        Title="Settings" Width="360" Height="470">
+        Title="Settings" Width="360" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False">
     <!-- Rows in on-screen order, which is also the Tab order (a DockPanel needed the bottom-
          docked Reset button first, so Tab visited it before everything else). -->
     <Grid>
@@ -11,7 +11,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <GroupBox Grid.Row="0" Header="Appearance" Margin="8,8,8,0">
