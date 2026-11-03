@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,6 +22,8 @@ namespace Scratchpad
         private FontFamilySettings _fontFamilySettings;
         private readonly StartupWindowStore _startupWindowStore = new StartupWindowStore(StartupWindowStore.DefaultFilePath);
         private StartupWindowSettings _startupWindowSettings;
+        private readonly DateFormatStore _dateFormatStore = new DateFormatStore(DateFormatStore.DefaultFilePath);
+        private DateFormatSettings _dateFormatSettings;
         private SettingsWindow _settingsWindow;
         private readonly PreviewNavigator _previewNavigator;
         private readonly ThemeManager _themeManager;
@@ -63,6 +66,7 @@ namespace Scratchpad
             ApplyEditorFontFamily();
 
             _startupWindowSettings = _startupWindowStore.Load();
+            _dateFormatSettings = _dateFormatStore.Load();
         }
 
         // Read by App.OnStartup once everything else is in place; changing it in Settings only
@@ -489,7 +493,8 @@ namespace Scratchpad
             }
 
             var settingsWindow = new SettingsWindow(_fontFamilySettings, _themeManager.Preference, _themeManager.Current,
-                _startupWindowSettings.ShowWindowOnStartup, FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
+                _startupWindowSettings.ShowWindowOnStartup, _dateFormatSettings.Format,
+                FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
             // Without an Owner, Windows places the window at its default cascade position
             // (top-left), unrelated to wherever the user has parked Scratchpad. Owning it also
             // keeps it above an always-on-top main window and hides it alongside the main window.
@@ -501,6 +506,11 @@ namespace Scratchpad
             {
                 _startupWindowSettings = new StartupWindowSettings { ShowWindowOnStartup = show };
                 _startupWindowStore.Save(_startupWindowSettings);
+            };
+            settingsWindow.DateFormatChanged += format =>
+            {
+                _dateFormatSettings = new DateFormatSettings { Format = format };
+                _dateFormatStore.Save(_dateFormatSettings);
             };
             // Deferred: applying swaps the palette, which re-templates the very combo box whose
             // SelectionChanged is still on the stack — let that handler finish first.
@@ -523,7 +533,7 @@ namespace Scratchpad
         }
 
         // Leaves window placement, always-on-top and preview mode alone — fonts, font sizes,
-        // theme and show-on-startup reset. Font sizes are saved here rather than waiting for the usual on-hide save.
+        // theme, show-on-startup and the date format reset. Font sizes are saved here rather than waiting for the usual on-hide save.
         private void OnResetRequested()
         {
             _fontSizeSettings = FontSizeStore.Defaults;
@@ -544,7 +554,11 @@ namespace Scratchpad
             _startupWindowSettings = StartupWindowStore.Defaults;
             _startupWindowStore.Save(_startupWindowSettings);
 
-            _settingsWindow?.ShowSettings(_fontFamilySettings, _themeManager.Preference, _startupWindowSettings.ShowWindowOnStartup);
+            _dateFormatSettings = DateFormatStore.Defaults;
+            _dateFormatStore.Save(_dateFormatSettings);
+
+            _settingsWindow?.ShowSettings(_fontFamilySettings, _themeManager.Preference, _startupWindowSettings.ShowWindowOnStartup,
+                _dateFormatSettings.Format);
         }
 
         private void ApplyEditorFontFamily()
@@ -872,6 +886,27 @@ namespace Scratchpad
             }
         }
 
+        private void DateButton_Click(object sender, RoutedEventArgs e)
+        {
+            InsertDate();
+        }
+
+        // Types today's date at the cursor, replacing any selection as typing would. Assigning
+        // SelectedText (rather than rebuilding Text) keeps it one undoable edit and leaves the
+        // scroll position alone. From the preview, switches to the editor first, place kept.
+        private void InsertDate()
+        {
+            if (PreviewScrollViewer.IsVisible)
+            {
+                SwitchToEditorAt(null);
+            }
+
+            var stamp = DateStamp.Format(_dateFormatSettings.Format, DateTime.Now, CultureInfo.CurrentCulture);
+            EditorTextBox.SelectedText = stamp;
+            EditorTextBox.CaretIndex = EditorTextBox.SelectionStart + stamp.Length;
+            EditorTextBox.Focus();
+        }
+
         private void AlwaysOnTopToggleButton_Click(object sender, RoutedEventArgs e)
         {
             Topmost = AlwaysOnTopToggleButton.IsChecked == true;
@@ -882,6 +917,11 @@ namespace Scratchpad
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
             {
                 SetPreviewMode(!(PreviewToggleButton.IsChecked == true));
+                e.Handled = true;
+            }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.OemSemicolon)
+            {
+                InsertDate();
                 e.Handled = true;
             }
             else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.T)

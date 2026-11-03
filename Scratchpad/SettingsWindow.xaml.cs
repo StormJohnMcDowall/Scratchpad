@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -28,10 +29,11 @@ namespace Scratchpad
         public event Action<FontFamilySettings> SettingsChanged;
         public event Action<ThemePreference> ThemePreferenceChanged;
         public event Action<bool> ShowWindowOnStartupChanged;
+        public event Action<string> DateFormatChanged;
         public event Action ResetRequested;
 
         public SettingsWindow(FontFamilySettings current, ThemePreference currentThemePreference, AppTheme currentTheme,
-            bool showWindowOnStartup, IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
+            bool showWindowOnStartup, string dateFormat, IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
         {
             InitializeComponent();
             _theme = currentTheme;
@@ -47,11 +49,12 @@ namespace Scratchpad
 
             _monospaceFamilies = monospaceFamilies;
             _normalTextFamilies = normalTextFamilies;
-            ShowSettings(current, currentThemePreference, showWindowOnStartup);
+            ShowSettings(current, currentThemePreference, showWindowOnStartup, dateFormat);
 
             ThemeComboBox.SelectionChanged += (s, e) => RaiseThemePreferenceChanged();
             ShowOnStartupCheckBox.Checked += (s, e) => RaiseShowWindowOnStartupChanged();
             ShowOnStartupCheckBox.Unchecked += (s, e) => RaiseShowWindowOnStartupChanged();
+            DateFormatTextBox.TextChanged += (s, e) => OnDateFormatTextChanged();
             EditorFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewNormalFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewCodeFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
@@ -60,11 +63,14 @@ namespace Scratchpad
         // Re-selects the pickers to match settings changed from outside this window (a reset).
         // Each SelectedItem assignment fires SelectionChanged; without the guard every one would
         // push a half-updated value back out to be applied and saved.
-        public void ShowSettings(FontFamilySettings settings, ThemePreference themePreference, bool showWindowOnStartup)
+        public void ShowSettings(FontFamilySettings settings, ThemePreference themePreference, bool showWindowOnStartup,
+            string dateFormat)
         {
             _isUpdatingSelection = true;
             try
             {
+                DateFormatTextBox.Text = dateFormat;
+                UpdateDateExample();
                 ShowOnStartupCheckBox.IsChecked = showWindowOnStartup;
                 ThemeComboBox.SelectedItem = ThemeComboBox.Items.Cast<ComboBoxItem>()
                     .FirstOrDefault(item => (ThemePreference)item.Tag == themePreference);
@@ -154,6 +160,24 @@ namespace Scratchpad
             {
                 // See comment above.
             }
+        }
+
+        // Saved as typed, so a half-typed format is saved too; DateStamp falls back to the default
+        // for anything .NET rejects, and the example shows exactly what Date would insert.
+        private void OnDateFormatTextChanged()
+        {
+            UpdateDateExample();
+            if (_isUpdatingSelection)
+            {
+                return;
+            }
+
+            DateFormatChanged?.Invoke(DateFormatTextBox.Text);
+        }
+
+        private void UpdateDateExample()
+        {
+            DateExampleTextBlock.Text = "Today: " + DateStamp.Format(DateFormatTextBox.Text, DateTime.Now, CultureInfo.CurrentCulture);
         }
 
         private void RaiseShowWindowOnStartupChanged()

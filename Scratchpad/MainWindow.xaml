@@ -65,6 +65,7 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal">
                 <ToggleButton x:Name="PreviewToggleButton" Content="Preview" Click="PreviewToggleButton_Click" Padding="8,4" Margin="4" />
                 <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Always on Top" Click="AlwaysOnTopToggleButton_Click" Padding="8,4" Margin="4" />
+                <Button x:Name="DateButton" Content="Date" Click="DateButton_Click" Padding="8,4" Margin="2,4" Focusable="False" ToolTip="Insert today's date (Ctrl+;)" />
                 <Border Width="1" Margin="4,6" Background="{DynamicResource PostItBorderBrush}" />
                 <Button x:Name="ZoomOutButton" Content="-" Click="ZoomOutButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />
                 <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" Padding="8,4" Margin="2,4" MinWidth="28" Focusable="False" />

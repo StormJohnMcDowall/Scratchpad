@@ -104,8 +104,12 @@
     </ContextMenu>
 
     <!-- Editor: the caret and selection default to system colours that vanish on dark paper.
-         EditorTextBox's own local Background/Foreground still win over this style. -->
+         EditorTextBox's own local Background/Foreground still win over this style; the colours
+         here are for other text boxes (Settings' date format), which would otherwise be white. -->
     <Style TargetType="{x:Type TextBox}">
+        <Setter Property="Background" Value="{DynamicResource PostItBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PostItTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PostItBorderBrush}" />
         <Setter Property="CaretBrush" Value="{DynamicResource PostItTextBrush}" />
         <Setter Property="SelectionBrush" Value="{DynamicResource PostItSelectionBrush}" />
         <Setter Property="ContextMenu" Value="{StaticResource PostItEditorContextMenu}" />
