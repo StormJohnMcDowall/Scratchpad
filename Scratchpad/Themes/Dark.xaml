@@ -10,6 +10,7 @@
     <SolidColorBrush x:Key="PostItBackgroundBrush" Color="#3A3420" />
     <SolidColorBrush x:Key="PostItToolbarBrush" Color="#2F2A19" />
     <SolidColorBrush x:Key="PostItBorderBrush" Color="#5A5130" />
+    <SolidColorBrush x:Key="PostItWindowBorderBrush" Color="#6A5C24" />
     <SolidColorBrush x:Key="PostItButtonBrush" Color="#4A4228" />
     <SolidColorBrush x:Key="PostItButtonHoverBrush" Color="#6A5C24" />
     <SolidColorBrush x:Key="PostItButtonPressedBrush" Color="#8A7220" />
