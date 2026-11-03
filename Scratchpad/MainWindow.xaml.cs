@@ -376,7 +376,8 @@ namespace Scratchpad
             var rect = EditorTextBox.GetRectFromCharacterIndex(index);
             if (!rect.IsEmpty)
             {
-                EditorTextBox.ScrollToVerticalOffset(EditorTextBox.VerticalOffset + rect.Top);
+                // The rect includes the text padding; landing the line just below it, not under it.
+                EditorTextBox.ScrollToVerticalOffset(Math.Max(0, EditorTextBox.VerticalOffset + rect.Top - EditorTextBox.Padding.Top));
             }
             else
             {
@@ -397,7 +398,8 @@ namespace Scratchpad
         // Markdig.Wpf creates a fresh FlowDocument whenever the Markdown text changes (the same reason
         // ApplyPreviewFontSize/ApplyPreviewFonts already exist as post-render steps) — the
         // ScrollViewer's own Background alone isn't visible if that FlowDocument paints its own
-        // opaque background on top.
+        // opaque background on top. Each new document also brings automatic page padding, which
+        // would add to PreviewViewer's NoteTextPadding margin, so it's zeroed here too.
         private void ApplyPreviewBackground()
         {
             if (PreviewViewer.Document == null)
@@ -408,6 +410,7 @@ namespace Scratchpad
             // A resource reference rather than a one-off lookup, so a theme switch while the
             // preview is showing re-colours it too.
             PreviewViewer.Document.SetResourceReference(FlowDocument.BackgroundProperty, "PostItBackgroundBrush");
+            PreviewViewer.Document.PagePadding = new Thickness(0);
         }
 
         private void AdjustFontSize(int direction)

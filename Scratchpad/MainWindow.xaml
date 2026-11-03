@@ -45,6 +45,8 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Room around the note text, shared so the editor and preview line up. -->
+        <Thickness x:Key="NoteTextPadding">10,8,10,8</Thickness>
         <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource PostItScrollBarStyle}" />
         <Style TargetType="{x:Type Button}" BasedOn="{StaticResource PostItButtonBaseStyle}" />
         <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource PostItButtonBaseStyle}">
@@ -103,9 +105,13 @@
                      Background="{DynamicResource PostItBackgroundBrush}"
                      Foreground="{DynamicResource PostItTextBrush}"
                      BorderThickness="0"
+                     Padding="{StaticResource NoteTextPadding}"
                      TextChanged="EditorTextBox_TextChanged" />
             <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed" MouseDoubleClick="PreviewScrollViewer_MouseDoubleClick" PreviewMouseWheel="PreviewScrollViewer_PreviewMouseWheel" Background="{DynamicResource PostItBackgroundBrush}">
-                <markdig:MarkdownViewer x:Name="PreviewViewer" />
+                <!-- A margin on the viewer, not the ScrollViewer's Padding: it scrolls with the
+                     content, so PreviewNavigator's extent coordinates still line up, and it sits
+                     outside the zoom's LayoutTransform, so it stays the size of the editor's. -->
+                <markdig:MarkdownViewer x:Name="PreviewViewer" Margin="{StaticResource NoteTextPadding}" />
             </ScrollViewer>
         </Grid>
     </DockPanel>
