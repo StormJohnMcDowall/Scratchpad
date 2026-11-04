@@ -15,6 +15,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <GroupBox Grid.Row="0" Header="Appearance" Margin="8,8,8,0">
             <Grid Margin="8">
@@ -103,6 +104,13 @@
                 </Grid>
             </StackPanel>
         </GroupBox>
-        <Button Grid.Row="6" x:Name="ResetButton" HorizontalAlignment="Right" Content="Reset to defaults" Click="ResetButton_Click" Padding="8,4" Margin="8,0,8,8" />
+        <GroupBox Grid.Row="6" Header="Backups" Margin="8,0,8,8">
+            <StackPanel Margin="8">
+                <TextBlock Text="Copies of the note from the last 30 days." TextWrapping="Wrap" />
+                <Button x:Name="OpenBackupsFolderButton" Content="Open backups folder" HorizontalAlignment="Left"
+                        Padding="8,4" Margin="0,6,0,0" Click="OpenBackupsFolderButton_Click" />
+            </StackPanel>
+        </GroupBox>
+        <Button Grid.Row="7" x:Name="ResetButton" HorizontalAlignment="Right" Content="Reset to defaults" Click="ResetButton_Click" Padding="8,4" Margin="8,0,8,8" />
     </Grid>
 </Window>

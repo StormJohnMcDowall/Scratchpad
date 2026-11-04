@@ -42,6 +42,7 @@ namespace Scratchpad
         public event Action HotkeyCaptureEnded;
         public event Action<HotkeySettings> HotkeyChosen;
         public event Action ResetRequested;
+        public event Action OpenBackupsFolderRequested;
 
         public SettingsWindow(FontFamilySettings current, ThemePreference currentThemePreference, AppTheme currentTheme,
             bool showWindowOnStartup, string dateFormat, int peekSeconds, HotkeySettings hotkey, bool hotkeyWorking,
@@ -233,6 +234,11 @@ namespace Scratchpad
             {
                 _isUpdatingSelection = false;
             }
+        }
+
+        private void OpenBackupsFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenBackupsFolderRequested?.Invoke();
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)

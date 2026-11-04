@@ -44,6 +44,9 @@ namespace Scratchpad
         private readonly PreviewNavigator _previewNavigator;
         private readonly ThemeManager _themeManager;
         private readonly DebouncedAutosaveCoordinator _autosave;
+        private readonly BackupStore _backupStore = new BackupStore(BackupStore.DefaultFolder);
+        // The editor text as of the last change; null until the note is loaded this session.
+        private string _previousText;
         private bool _isExiting;
 
         public MainWindow(ThemeManager themeManager)
@@ -60,7 +63,13 @@ namespace Scratchpad
                 }
                 _settingsWindow?.ApplyTheme(theme);
             };
-            _autosave = new DebouncedAutosaveCoordinator(_documentStore.Save, TimeSpan.FromMilliseconds(500));
+            // The note's own save first, so a backup can never delay or block it. The store
+            // decides whether an hourly copy is due and swallows its own failures.
+            _autosave = new DebouncedAutosaveCoordinator(content =>
+            {
+                _documentStore.Save(content);
+                _backupStore.TryWriteRegularIfDue(content, DateTime.Now);
+            }, TimeSpan.FromMilliseconds(500));
             // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
             // between what's rendered here and what gets toggled there.
             PreviewViewer.Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
@@ -128,7 +137,12 @@ namespace Scratchpad
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            // Loading isn't an edit: no previous text while it's assigned, so it can't look like
+            // a big delete. Recorded explicitly afterwards, because assigning an empty note to
+            // the empty box raises no TextChanged at all.
+            _previousText = null;
             EditorTextBox.Text = _documentStore.Load();
+            _previousText = EditorTextBox.Text;
 
             var requested = _placementStore.Load();
             var clamped = WindowPlacement.Clamp(requested, GetScreenBoundsInDeviceIndependentUnits());
@@ -166,7 +180,16 @@ namespace Scratchpad
 
         private void EditorTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
-            _autosave.NotifyChanged(EditorTextBox.Text);
+            var text = EditorTextBox.Text;
+            // Here rather than in the autosave: it fires 500ms later, when the text from before
+            // the slip (the whole point of the copy) is already gone.
+            if (_previousText != null && BackupRules.IsBigDelete(_previousText, text))
+            {
+                _backupStore.TryWriteBeforeBigDelete(_previousText, DateTime.Now);
+            }
+            _previousText = text;
+
+            _autosave.NotifyChanged(text);
         }
 
         private void PreviewToggleButton_Click(object sender, RoutedEventArgs e)
@@ -720,6 +743,7 @@ namespace Scratchpad
                 _settingsWindow?.ShowHotkey(_globalHotkey.Current, IsHotkeyWorking(), null);
             };
             settingsWindow.HotkeyChosen += ApplyChosenHotkey;
+            settingsWindow.OpenBackupsFolderRequested += OpenBackupsFolder;
             settingsWindow.Closed += (s, args) => _settingsWindow = null;
             _settingsWindow = settingsWindow;
             settingsWindow.Show();
@@ -1473,6 +1497,30 @@ namespace Scratchpad
 
         // Called by App once the tray icon exists, so a key another program already owns can be
         // reported there — otherwise the hotkey would just silently not work.
+        // Called by App as the app exits. Only once the note was loaded this session: before
+        // that the editor is empty, and an empty "backup" would look newer than the real note.
+        public void WriteExitBackup()
+        {
+            if (_previousText != null)
+            {
+                _backupStore.TryWriteOnExit(EditorTextBox.Text, DateTime.Now);
+            }
+        }
+
+        // Created first, so the button works on a fresh install before any copy exists.
+        private void OpenBackupsFolder()
+        {
+            try
+            {
+                System.IO.Directory.CreateDirectory(BackupStore.DefaultFolder);
+                Process.Start("explorer.exe", "\"" + BackupStore.DefaultFolder + "\"");
+            }
+            catch
+            {
+                // Nothing to open is better than a crash.
+            }
+        }
+
         public void StartGlobalHotkey(Action<string> showWarning)
         {
             try

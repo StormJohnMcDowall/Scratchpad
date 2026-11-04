@@ -6,6 +6,23 @@ namespace Scratchpad
 {
     public partial class App : Application
     {
+        private MainWindow _mainWindow;
+
+        // Runs for the tray's Exit and when Windows ends the session alike. Null for a second
+        // launch, which shuts down before creating a window.
+        protected override void OnExit(ExitEventArgs e)
+        {
+            try
+            {
+                _mainWindow?.WriteExitBackup();
+            }
+            catch
+            {
+                // A backup must never stand in the way of exiting.
+            }
+            base.OnExit(e);
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -32,6 +49,7 @@ namespace Scratchpad
             }
 
             var mainWindow = new MainWindow(themeManager);
+            _mainWindow = mainWindow;
 
             // Start listening before any slower startup work (registry I/O below) so a second
             // launch arriving in that window still reaches this instance instead of timing out.
