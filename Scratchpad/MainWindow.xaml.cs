@@ -1005,6 +1005,9 @@ namespace Scratchpad
             {
                 return;
             }
+            // Raise while still off-screen, so the slide back plays in front of a window the
+            // user clicked meanwhile rather than appearing only at the end.
+            RaiseWithoutActivating();
             BeginSlide(_peekHomeTop, PeekState.SlidingBack);
         }
 
@@ -1054,15 +1057,20 @@ namespace Scratchpad
             {
                 Top = _peekHomeTop;
                 _peekState = PeekState.Idle;
+                // Again here for the zero-duration jump, which never saw the raise in the tick.
+                RaiseWithoutActivating();
+            }
+        }
 
-                // If the user clicked a window underneath while the note was away, that window
-                // rose above it. WPF's Topmost setter raises with SWP_NOACTIVATE, so this brings
-                // the note to the front without taking focus or changing always-on-top.
-                if (!Topmost)
-                {
-                    Topmost = true;
-                    Topmost = false;
-                }
+        // If the user clicked a window underneath while the note was away, that window rose
+        // above it. WPF's Topmost setter raises with SWP_NOACTIVATE, so this brings the note to
+        // the front without taking focus or changing always-on-top.
+        private void RaiseWithoutActivating()
+        {
+            if (!Topmost)
+            {
+                Topmost = true;
+                Topmost = false;
             }
         }
 
