@@ -134,4 +134,27 @@ public class PreviewSourceMapTests
 
         Assert.Equal(markdown.LastIndexOf("alpha"), offset);
     }
+
+    [Fact]
+    public void Build_FencedCode_CarriesItsLanguage()
+    {
+        var blocks = PreviewSourceMap.Build("Para\n\n```csharp\nint x;\n```\n\n```\nplain\n```\n\n    indented\n");
+
+        Assert.Equal(4, blocks.Count);
+        Assert.Null(blocks[0].CodeLanguage);
+        Assert.Equal("csharp", blocks[1].CodeLanguage);
+        Assert.Null(blocks[2].CodeLanguage);
+        Assert.Null(blocks[3].CodeLanguage);
+    }
+
+    [Fact]
+    public void Build_FencedCodeInsideListAndQuote_CarriesItsLanguage()
+    {
+        var blocks = PreviewSourceMap.Build("- item\n\n  ```json\n  {}\n  ```\n\n> ```js\n> x\n> ```\n\nAfter\n");
+
+        Assert.Equal(4, blocks.Count);
+        Assert.Equal("json", blocks[1].CodeLanguage);
+        Assert.Equal("js", blocks[2].CodeLanguage);
+        Assert.Null(blocks[3].CodeLanguage);
+    }
 }

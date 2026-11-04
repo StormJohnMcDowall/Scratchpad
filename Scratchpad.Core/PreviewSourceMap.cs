@@ -12,14 +12,26 @@ namespace Scratchpad.Core
     public struct SourceBlock
     {
         public SourceBlock(int start, int end)
+            : this(start, end, null)
+        {
+        }
+
+        public SourceBlock(int start, int end, string codeLanguage)
         {
             Start = start;
             End = end;
+            CodeLanguage = codeLanguage;
         }
 
         public int Start { get; }
 
         public int End { get; }
+
+        /// <summary>
+        /// A fenced code block's language tag (the first word after the backticks), which
+        /// Markdig.Wpf drops when it renders; null for every other block.
+        /// </summary>
+        public string CodeLanguage { get; }
     }
 
     public static class PreviewSourceMap
@@ -32,6 +44,7 @@ namespace Scratchpad.Core
         /// headings, code blocks and thematic breaks each become one Paragraph; quotes and lists
         /// are containers; a table is one unit; HTML blocks and link reference definitions have
         /// no renderer and draw nothing. The Nth entry therefore pairs with the Nth such WPF block.
+        /// Fenced code blocks also carry their language tag, for the preview's highlighting.
         /// </summary>
         public static IReadOnlyList<SourceBlock> Build(string markdown)
         {
@@ -96,7 +109,8 @@ namespace Scratchpad.Core
                 if (block is ParagraphBlock || block is HeadingBlock || block is CodeBlock
                     || block is ThematicBreakBlock || block is Table)
                 {
-                    blocks.Add(new SourceBlock(block.Span.Start, block.Span.End + 1));
+                    var language = block is FencedCodeBlock fenced && !string.IsNullOrWhiteSpace(fenced.Info) ? fenced.Info : null;
+                    blocks.Add(new SourceBlock(block.Span.Start, block.Span.End + 1, language));
                 }
                 else if (block is ContainerBlock child)
                 {
