@@ -38,6 +38,19 @@ namespace Scratchpad
             };
         }
 
+        // On Windows 10/11 a balloon shows as a toast. Best-effort: a notification that fails
+        // must never take the app down with it.
+        public void ShowWarning(string text)
+        {
+            try
+            {
+                _notifyIcon.ShowBalloonTip(5000, "Scratchpad", text, ToolTipIcon.Warning);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         // The icon is cosmetic: if the embedded resource can't be read, the generic icon still
         // gives the user a tray entry, which the app can't do without.
         private static Icon LoadAppIcon()

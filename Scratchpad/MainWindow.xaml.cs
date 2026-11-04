@@ -28,6 +28,8 @@ namespace Scratchpad
         private DateFormatSettings _dateFormatSettings;
         private readonly PeekStore _peekStore = new PeekStore(PeekStore.DefaultFilePath);
         private PeekSettings _peekSettings;
+        private readonly HotkeyStore _hotkeyStore = new HotkeyStore(HotkeyStore.DefaultFilePath);
+        private readonly GlobalHotkey _globalHotkey;
         private readonly DispatcherTimer _peekTimer;
         private enum PeekState { Idle, SlidingOut, Away, SlidingBack }
         // TimeSpan.Zero turns the slide off: the note then jumps off-screen and back.
@@ -85,6 +87,9 @@ namespace Scratchpad
 
             _peekTimer = new DispatcherTimer();
             _peekTimer.Tick += OnPeekTimerTick;
+
+            _globalHotkey = new GlobalHotkey();
+            _globalHotkey.Pressed += OnGlobalHotkeyPressed;
         }
 
         // Read by App.OnStartup once everything else is in place; changing it in Settings only
@@ -1434,6 +1439,39 @@ namespace Scratchpad
         {
             _isExiting = true;
             CancelPeek();
+            _globalHotkey.Dispose();
+        }
+
+        // Called by App once the tray icon exists, so a key another program already owns can be
+        // reported there — otherwise the hotkey would just silently not work.
+        public void StartGlobalHotkey(Action<string> showWarning)
+        {
+            try
+            {
+                if (!_globalHotkey.Start(_hotkeyStore.Load()))
+                {
+                    showWarning("Couldn't use " + Hotkey.Format(_globalHotkey.Current)
+                        + " as the hotkey because another program has it. Choose another key in Settings.");
+                }
+            }
+            catch
+            {
+                // The hotkey is a convenience; the note is still reachable from the tray.
+            }
+        }
+
+        // The hotkey only brings the note forward, ready to type; the user leaves with Alt+Tab.
+        // From the preview it switches to the editor as Ctrl+E does (caret at the top block).
+        private void OnGlobalHotkeyPressed()
+        {
+            ShowAndActivate();
+            if (PreviewToggleButton.IsChecked == true)
+            {
+                SwitchToEditorAt(null);
+            }
+            // Deferred: on the first show after a hidden start, Window_Loaded runs inside
+            // ShowAndActivate and focus set now can be lost before the window settles.
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => EditorTextBox.Focus()));
         }
     }
 }

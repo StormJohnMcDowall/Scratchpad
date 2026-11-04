@@ -66,6 +66,8 @@ namespace Scratchpad
                 },
                 onLeftClick: mainWindow.EndPeekEarly);
 
+            mainWindow.StartGlobalHotkey(tray.ShowWarning);
+
             // Last, so the tray icon and second-launch listener already exist. The first Show()
             // runs Window_Loaded, which restores the saved size and position as usual.
             if (mainWindow.ShowWindowOnStartup)
