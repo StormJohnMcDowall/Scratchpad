@@ -25,6 +25,9 @@ namespace Scratchpad
         private StartupWindowSettings _startupWindowSettings;
         private readonly DateFormatStore _dateFormatStore = new DateFormatStore(DateFormatStore.DefaultFilePath);
         private DateFormatSettings _dateFormatSettings;
+        private readonly PeekStore _peekStore = new PeekStore(PeekStore.DefaultFilePath);
+        private PeekSettings _peekSettings;
+        private readonly DispatcherTimer _peekTimer;
         private SettingsWindow _settingsWindow;
         private readonly PreviewNavigator _previewNavigator;
         private readonly ThemeManager _themeManager;
@@ -68,6 +71,10 @@ namespace Scratchpad
 
             _startupWindowSettings = _startupWindowStore.Load();
             _dateFormatSettings = _dateFormatStore.Load();
+            _peekSettings = _peekStore.Load();
+
+            _peekTimer = new DispatcherTimer();
+            _peekTimer.Tick += OnPeekTimerTick;
         }
 
         // Read by App.OnStartup once everything else is in place; changing it in Settings only
@@ -932,6 +939,55 @@ namespace Scratchpad
             Topmost = AlwaysOnTopToggleButton.IsChecked == true;
         }
 
+        private void PeekButton_Click(object sender, RoutedEventArgs e) => StartPeek();
+
+        // Tunnelling, so it sees the click before any control inside the note does: a
+        // Ctrl+Shift+click on a checkbox, a button or the editor only peeks.
+        private void Window_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                StartPeek();
+                e.Handled = true;
+            }
+        }
+
+        private void StartPeek()
+        {
+            _peekTimer.Interval = TimeSpan.FromSeconds(_peekSettings.Seconds);
+            Hide();
+            _peekTimer.Start();
+        }
+
+        private void OnPeekTimerTick(object sender, EventArgs e)
+        {
+            _peekTimer.Stop();
+            if (_isExiting)
+            {
+                return;
+            }
+            ShowWithoutActivating();
+        }
+
+        // The peek's own return: the user is busy in whatever was underneath, so keep their
+        // focus there. ShowActivated decides SW_SHOWNA vs SW_SHOW on every Show(), not just the
+        // first. Deliberately none of ShowAndActivate's Topmost toggling either.
+        private void ShowWithoutActivating()
+        {
+            ShowActivated = false;
+            Show();
+            ShowActivated = true;
+        }
+
+        // A tray click: ends a peek early (with focus, as Show does); otherwise it does nothing.
+        public void EndPeekEarly()
+        {
+            if (_peekTimer.IsEnabled)
+            {
+                ShowAndActivate();
+            }
+        }
+
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
@@ -1038,6 +1094,9 @@ namespace Scratchpad
 
         public void ShowAndActivate()
         {
+            // Any other way of showing the note ends a peek. Otherwise its timer would still be
+            // running, and if the user hid the note again before it fired, it would pop back up.
+            _peekTimer.Stop();
             Show();
             if (WindowState == WindowState.Minimized)
             {
@@ -1060,6 +1119,7 @@ namespace Scratchpad
         public void MarkExiting()
         {
             _isExiting = true;
+            _peekTimer.Stop();
         }
     }
 }

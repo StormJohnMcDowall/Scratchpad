@@ -9,7 +9,7 @@ namespace Scratchpad
         private readonly NotifyIcon _notifyIcon;
         private readonly Icon _appIcon;
 
-        public TrayIconManager(Action onShowRequested, Action onSettingsRequested, Action onExitRequested)
+        public TrayIconManager(Action onShowRequested, Action onSettingsRequested, Action onExitRequested, Action onLeftClick)
         {
             var menu = new ContextMenuStrip();
             // Bold marks Show as what double-clicking the icon does, as Windows' own tray menus do.
@@ -28,6 +28,14 @@ namespace Scratchpad
                 Text = "Scratchpad"
             };
             _notifyIcon.DoubleClick += (s, e) => onShowRequested();
+            // MouseClick rather than Click: Click also fires for the right click that opens the menu.
+            _notifyIcon.MouseClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    onLeftClick();
+                }
+            };
         }
 
         // The icon is cosmetic: if the embedded resource can't be read, the generic icon still
