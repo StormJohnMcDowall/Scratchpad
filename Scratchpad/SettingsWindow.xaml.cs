@@ -25,15 +25,17 @@ namespace Scratchpad
         private readonly IReadOnlyList<FontFamily> _normalTextFamilies;
         private bool _isUpdatingSelection;
         private AppTheme _theme;
+        private int _peekSeconds;
 
         public event Action<FontFamilySettings> SettingsChanged;
         public event Action<ThemePreference> ThemePreferenceChanged;
         public event Action<bool> ShowWindowOnStartupChanged;
         public event Action<string> DateFormatChanged;
+        public event Action<int> PeekSecondsChanged;
         public event Action ResetRequested;
 
         public SettingsWindow(FontFamilySettings current, ThemePreference currentThemePreference, AppTheme currentTheme,
-            bool showWindowOnStartup, string dateFormat, IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
+            bool showWindowOnStartup, string dateFormat, int peekSeconds, IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
         {
             InitializeComponent();
             _theme = currentTheme;
@@ -49,12 +51,14 @@ namespace Scratchpad
 
             _monospaceFamilies = monospaceFamilies;
             _normalTextFamilies = normalTextFamilies;
-            ShowSettings(current, currentThemePreference, showWindowOnStartup, dateFormat);
+            ShowSettings(current, currentThemePreference, showWindowOnStartup, dateFormat, peekSeconds);
 
             ThemeComboBox.SelectionChanged += (s, e) => RaiseThemePreferenceChanged();
             ShowOnStartupCheckBox.Checked += (s, e) => RaiseShowWindowOnStartupChanged();
             ShowOnStartupCheckBox.Unchecked += (s, e) => RaiseShowWindowOnStartupChanged();
             DateFormatTextBox.TextChanged += (s, e) => OnDateFormatTextChanged();
+            PeekSecondsTextBox.TextChanged += (s, e) => OnPeekSecondsTextChanged();
+            PeekSecondsTextBox.LostFocus += (s, e) => ShowPeekSeconds();
             EditorFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewNormalFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewCodeFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
@@ -64,12 +68,14 @@ namespace Scratchpad
         // Each SelectedItem assignment fires SelectionChanged; without the guard every one would
         // push a half-updated value back out to be applied and saved.
         public void ShowSettings(FontFamilySettings settings, ThemePreference themePreference, bool showWindowOnStartup,
-            string dateFormat)
+            string dateFormat, int peekSeconds)
         {
             _isUpdatingSelection = true;
             try
             {
                 DateFormatTextBox.Text = dateFormat;
+                _peekSeconds = peekSeconds;
+                ShowPeekSeconds();
                 UpdateDateExample();
                 ShowOnStartupCheckBox.IsChecked = showWindowOnStartup;
                 ThemeComboBox.SelectedItem = ThemeComboBox.Items.Cast<ComboBoxItem>()
@@ -173,6 +179,38 @@ namespace Scratchpad
             }
 
             DateFormatChanged?.Invoke(DateFormatTextBox.Text);
+        }
+
+        // Applied as typed, but the box is only rewritten on leaving it: rewriting mid-typing
+        // would turn the "0" of a planned "0" → "10" edit into "1" under the user's cursor.
+        private void OnPeekSecondsTextChanged()
+        {
+            if (_isUpdatingSelection)
+            {
+                return;
+            }
+
+            var seconds = PeekStore.ParseSeconds(PeekSecondsTextBox.Text);
+            if (seconds.HasValue && seconds.Value != _peekSeconds)
+            {
+                _peekSeconds = seconds.Value;
+                PeekSecondsChanged?.Invoke(_peekSeconds);
+            }
+        }
+
+        // Shows the value actually in use: "0" becomes "1", and "abc" goes back to the last number.
+        private void ShowPeekSeconds()
+        {
+            var wasUpdating = _isUpdatingSelection;
+            _isUpdatingSelection = true;
+            try
+            {
+                PeekSecondsTextBox.Text = _peekSeconds.ToString(CultureInfo.CurrentCulture);
+            }
+            finally
+            {
+                _isUpdatingSelection = wasUpdating;
+            }
         }
 
         // Says why the example differs from what was typed when the default stands in. The

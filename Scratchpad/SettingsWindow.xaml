@@ -13,6 +13,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <GroupBox Grid.Row="0" Header="Appearance" Margin="8,8,8,0">
             <Grid Margin="8">
@@ -46,7 +47,14 @@
                 <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DateExampleTextBlock" Margin="2,4,0,0" TextWrapping="Wrap" />
             </Grid>
         </GroupBox>
-        <GroupBox Grid.Row="3" Header="Fonts" Margin="8">
+        <GroupBox Grid.Row="3" Header="Peek" Margin="8,8,8,0">
+            <StackPanel Orientation="Horizontal" Margin="8">
+                <TextBlock Text="Peek for" VerticalAlignment="Center" />
+                <TextBox x:Name="PeekSecondsTextBox" Width="40" Margin="6,0" Padding="2" HorizontalContentAlignment="Right" />
+                <TextBlock Text="seconds" VerticalAlignment="Center" />
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Grid.Row="4" Header="Fonts" Margin="8">
             <StackPanel Margin="8">
                 <Grid Margin="0,4">
                     <Grid.ColumnDefinitions>
@@ -74,6 +82,6 @@
                 </Grid>
             </StackPanel>
         </GroupBox>
-        <Button Grid.Row="4" x:Name="ResetButton" HorizontalAlignment="Right" Content="Reset to defaults" Click="ResetButton_Click" Padding="8,4" Margin="8,0,8,8" />
+        <Button Grid.Row="5" x:Name="ResetButton" HorizontalAlignment="Right" Content="Reset to defaults" Click="ResetButton_Click" Padding="8,4" Margin="8,0,8,8" />
     </Grid>
 </Window>

@@ -517,7 +517,7 @@ namespace Scratchpad
             }
 
             var settingsWindow = new SettingsWindow(_fontFamilySettings, _themeManager.Preference, _themeManager.Current,
-                _startupWindowSettings.ShowWindowOnStartup, _dateFormatSettings.Format,
+                _startupWindowSettings.ShowWindowOnStartup, _dateFormatSettings.Format, _peekSettings.Seconds,
                 FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
             // Without an Owner, Windows places the window at its default cascade position
             // (top-left), unrelated to wherever the user has parked Scratchpad. Owning it also
@@ -535,6 +535,11 @@ namespace Scratchpad
             {
                 _dateFormatSettings = new DateFormatSettings { Format = format };
                 _dateFormatStore.Save(_dateFormatSettings);
+            };
+            settingsWindow.PeekSecondsChanged += seconds =>
+            {
+                _peekSettings = new PeekSettings { Seconds = seconds };
+                _peekStore.Save(_peekSettings);
             };
             // Deferred: applying swaps the palette, which re-templates the very combo box whose
             // SelectionChanged is still on the stack — let that handler finish first.
@@ -557,7 +562,7 @@ namespace Scratchpad
         }
 
         // Leaves window placement, always-on-top and preview mode alone — fonts, font sizes,
-        // theme, show-on-startup and the date format reset. Font sizes are saved here rather than waiting for the usual on-hide save.
+        // theme, show-on-startup, the date format and the peek time reset. Font sizes are saved here rather than waiting for the usual on-hide save.
         private void OnResetRequested()
         {
             _fontSizeSettings = FontSizeStore.Defaults;
@@ -581,8 +586,11 @@ namespace Scratchpad
             _dateFormatSettings = DateFormatStore.Defaults;
             _dateFormatStore.Save(_dateFormatSettings);
 
+            _peekSettings = PeekStore.Defaults;
+            _peekStore.Save(_peekSettings);
+
             _settingsWindow?.ShowSettings(_fontFamilySettings, _themeManager.Preference, _startupWindowSettings.ShowWindowOnStartup,
-                _dateFormatSettings.Format);
+                _dateFormatSettings.Format, _peekSettings.Seconds);
         }
 
         private void ApplyEditorFontFamily()
