@@ -48,6 +48,8 @@ public class HotkeyTests
     [InlineData(HotkeyModifiers.Win, 0, false)]
     [InlineData(HotkeyModifiers.Win, 0xFF, false)]
     [InlineData(HotkeyModifiers.Win, -1, false)]
+    [InlineData((HotkeyModifiers)0x18, 0x4E, false)]
+    [InlineData((HotkeyModifiers)(-1), 0x4E, false)]
     public void IsValid_RequiresWinCtrlOrAltAndARealKey(HotkeyModifiers mods, int vk, bool expected)
     {
         Assert.Equal(expected, Hotkey.IsValid(new HotkeySettings { Modifiers = mods, VirtualKey = vk }));

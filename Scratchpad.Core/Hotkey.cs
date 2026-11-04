@@ -7,6 +7,7 @@ namespace Scratchpad.Core
     public static class Hotkey
     {
         private const HotkeyModifiers RequiredModifiers = HotkeyModifiers.Win | HotkeyModifiers.Control | HotkeyModifiers.Alt;
+        private const HotkeyModifiers KnownModifiers = RequiredModifiers | HotkeyModifiers.Shift;
         private const int VkTab = 0x09;
         private const int VkEscape = 0x1B;
 
@@ -24,12 +25,14 @@ namespace Scratchpad.Core
 
         /// <summary>
         /// Whether the hotkey can be registered: a real, non-modifier key with Win, Ctrl or Alt —
-        /// a plain or Shift-only letter would be stolen from typing in every app.
+        /// a plain or Shift-only letter would be stolen from typing in every app. Unknown modifier
+        /// bits (only a hand-edited file has them) are invalid too: Windows would refuse them.
         /// </summary>
         public static bool IsValid(HotkeySettings hotkey)
         {
             return hotkey.VirtualKey >= 1 && hotkey.VirtualKey <= 0xFE
                 && !IsModifierKey(hotkey.VirtualKey)
+                && (hotkey.Modifiers & ~KnownModifiers) == 0
                 && (hotkey.Modifiers & RequiredModifiers) != 0;
         }
 

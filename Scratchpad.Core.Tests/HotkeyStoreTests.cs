@@ -67,6 +67,8 @@ public class HotkeyStoreTests
     [InlineData("{\"Modifiers\":2,\"VirtualKey\":17}")]
     [InlineData("{\"Modifiers\":8,\"VirtualKey\":999}")]
     [InlineData("{\"Modifiers\":8,\"VirtualKey\":-4}")]
+    [InlineData("{\"Modifiers\":24,\"VirtualKey\":78}")]
+    [InlineData("{\"Modifiers\":-1,\"VirtualKey\":78}")]
     public void Load_InvalidHotkey_ReturnsDefaults(string json)
     {
         var path = NewPath();
