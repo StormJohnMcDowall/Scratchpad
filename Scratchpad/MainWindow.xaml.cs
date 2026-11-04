@@ -979,12 +979,22 @@ namespace Scratchpad
 
         // The peek's own return: the user is busy in whatever was underneath, so keep their
         // focus there. ShowActivated decides SW_SHOWNA vs SW_SHOW on every Show(), not just the
-        // first. Deliberately none of ShowAndActivate's Topmost toggling either.
+        // first.
         private void ShowWithoutActivating()
         {
             ShowActivated = false;
             Show();
             ShowActivated = true;
+
+            // SW_SHOWNA re-shows the note at its old z-order slot, but hiding it activated the
+            // window underneath, which rose above that slot — so without always-on-top the note
+            // would come back hidden behind it. WPF's Topmost setter raises with SWP_NOACTIVATE,
+            // so this brings it to the front without taking focus or changing the user's choice.
+            if (!Topmost)
+            {
+                Topmost = true;
+                Topmost = false;
+            }
         }
 
         // A tray click: ends a peek early (with focus, as Show does); otherwise it does nothing.
