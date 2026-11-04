@@ -1103,13 +1103,24 @@ namespace Scratchpad
             EditorTextBox.Focus();
         }
 
-        // Replaces just the touched lines via SelectedText, which keeps it one undoable edit and
-        // leaves the scroll position alone, then selects what LineIndenter says to.
+        // Replaces just the touched lines via SelectedText, which leaves the scroll position alone,
+        // then selects what LineIndenter says to. The change block opens while the user's own
+        // selection is still in place: undo restores the selection captured when the block began,
+        // so without it Ctrl+Z would leave the whole touched lines selected, one keystroke away
+        // from being typed over.
         private void ApplyIndentEdit(IndentEdit edit)
         {
-            EditorTextBox.Select(edit.ReplaceStart, edit.ReplaceLength);
-            EditorTextBox.SelectedText = edit.Replacement;
-            EditorTextBox.Select(edit.SelectionStart, edit.SelectionLength);
+            EditorTextBox.BeginChange();
+            try
+            {
+                EditorTextBox.Select(edit.ReplaceStart, edit.ReplaceLength);
+                EditorTextBox.SelectedText = edit.Replacement;
+                EditorTextBox.Select(edit.SelectionStart, edit.SelectionLength);
+            }
+            finally
+            {
+                EditorTextBox.EndChange();
+            }
         }
 
         private void AlwaysOnTopToggleButton_Click(object sender, RoutedEventArgs e)
@@ -1282,7 +1293,7 @@ namespace Scratchpad
             }
             else if (EditorTextBox.IsKeyboardFocused && e.Key == Key.Tab && Keyboard.Modifiers == ModifierKeys.None)
             {
-                // Null when the selection stays on one line: Tab is left to type a tab as usual.
+                // Null only when the selection stays on one line: Tab is left to type a tab as usual.
                 var edit = LineIndenter.Indent(EditorTextBox.Text, EditorTextBox.SelectionStart, EditorTextBox.SelectionLength);
                 if (edit != null)
                 {
@@ -1297,8 +1308,8 @@ namespace Scratchpad
                 {
                     ApplyIndentEdit(edit);
                 }
-                // Handled even when there was nothing to remove, so Shift+Tab never moves focus
-                // out of the note.
+                // Handled even when there was nothing to remove: with AcceptsTab the TextBox would
+                // otherwise type a tab, replacing any selection.
                 e.Handled = true;
             }
             else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.T)

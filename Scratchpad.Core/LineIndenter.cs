@@ -37,7 +37,8 @@ namespace Scratchpad.Core
         /// <summary>
         /// Indents every non-empty line the selection touches by <see cref="IndentUnit"/>.
         /// Returns null when the selection doesn't span a line break, so the caller can let Tab
-        /// type as usual.
+        /// type as usual. A multi-line selection always gets an edit, even when every touched
+        /// line is blank, so Tab never replaces it.
         /// </summary>
         public static IndentEdit Indent(string text, int selectionStart, int selectionLength)
         {
@@ -46,7 +47,7 @@ namespace Scratchpad.Core
                 return null;
             }
 
-            return Edit(text, selectionStart, selectionLength, IndentLine);
+            return Edit(text, selectionStart, selectionLength, IndentLine, nullWhenUnchanged: false);
         }
 
         /// <summary>
@@ -55,7 +56,7 @@ namespace Scratchpad.Core
         /// </summary>
         public static IndentEdit Outdent(string text, int selectionStart, int selectionLength)
         {
-            return Edit(text, selectionStart, selectionLength, OutdentLine);
+            return Edit(text, selectionStart, selectionLength, OutdentLine, nullWhenUnchanged: true);
         }
 
         private delegate string LineEdit(string line, out int removed);
@@ -85,7 +86,7 @@ namespace Scratchpad.Core
             return line.Substring(removed);
         }
 
-        private static IndentEdit Edit(string text, int selectionStart, int selectionLength, LineEdit lineEdit)
+        private static IndentEdit Edit(string text, int selectionStart, int selectionLength, LineEdit lineEdit, bool nullWhenUnchanged)
         {
             var selectionEnd = selectionStart + selectionLength;
             var firstLineStart = selectionStart == 0 ? 0 : text.LastIndexOf('\n', selectionStart - 1) + 1;
@@ -124,7 +125,7 @@ namespace Scratchpad.Core
             var newBlock = replacement.ToString();
             var blockLength = blockEnd - firstLineStart;
             // Lines only ever gain or lose leading characters, so an unchanged length is no change.
-            if (newBlock.Length == blockLength)
+            if (nullWhenUnchanged && newBlock.Length == blockLength)
             {
                 return null;
             }

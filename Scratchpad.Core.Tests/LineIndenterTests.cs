@@ -52,6 +52,17 @@ public class LineIndenterTests
     }
 
     [Fact]
+    public void Indent_OnlyBlankLines_LeavesTextAloneRatherThanReturningNull()
+    {
+        var text = "a\n\n\nb";
+
+        var edit = LineIndenter.Indent(text, 2, 2);
+
+        Assert.NotNull(edit);
+        Assert.Equal(text, Apply(text, edit));
+    }
+
+    [Fact]
     public void Indent_CrLf_SelectionEndsBeforeLineBreak()
     {
         var text = "ab\r\ncd\r\nef";
