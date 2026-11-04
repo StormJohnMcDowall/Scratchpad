@@ -165,7 +165,8 @@ namespace Scratchpad
                 : e.Key == Key.DeadCharProcessed ? e.DeadCharProcessedKey
                 : e.Key;
             var virtualKey = KeyInterop.VirtualKeyFromKey(key);
-            var modifiers = ToHotkeyModifiers(Keyboard.Modifiers);
+            // Not Keyboard.Modifiers: it never includes the Win key, so Win+Shift+N read as Shift+N.
+            var modifiers = Hotkey.HeldModifiers(vk => Keyboard.IsKeyDown(KeyInterop.KeyFromVirtualKey(vk)));
 
             switch (Hotkey.Classify(modifiers, virtualKey))
             {
@@ -196,16 +197,6 @@ namespace Scratchpad
                     HotkeyChosen?.Invoke(chosen);
                     break;
             }
-        }
-
-        private static HotkeyModifiers ToHotkeyModifiers(ModifierKeys keys)
-        {
-            var modifiers = HotkeyModifiers.None;
-            if ((keys & ModifierKeys.Windows) != 0) modifiers |= HotkeyModifiers.Win;
-            if ((keys & ModifierKeys.Control) != 0) modifiers |= HotkeyModifiers.Control;
-            if ((keys & ModifierKeys.Alt) != 0) modifiers |= HotkeyModifiers.Alt;
-            if ((keys & ModifierKeys.Shift) != 0) modifiers |= HotkeyModifiers.Shift;
-            return modifiers;
         }
 
         private void HotkeyNoneButton_Click(object sender, RoutedEventArgs e)

@@ -55,6 +55,17 @@ public class HotkeyTests
         Assert.Equal(expected, Hotkey.IsValid(new HotkeySettings { Modifiers = mods, VirtualKey = vk }));
     }
 
+    // WPF's Keyboard.Modifiers never reports the Win key, so held modifiers are read key by key.
+    [Theory]
+    [InlineData(new[] { 0x5B, 0x10 }, HotkeyModifiers.Win | HotkeyModifiers.Shift)]
+    [InlineData(new[] { 0x5C }, HotkeyModifiers.Win)]
+    [InlineData(new[] { 0x11, 0x12 }, HotkeyModifiers.Control | HotkeyModifiers.Alt)]
+    [InlineData(new int[0], HotkeyModifiers.None)]
+    public void HeldModifiers_ReadsWinCtrlAltShiftFromKeyStates(int[] down, HotkeyModifiers expected)
+    {
+        Assert.Equal(expected, Hotkey.HeldModifiers(vk => System.Array.IndexOf(down, vk) >= 0));
+    }
+
     [Theory]
     [InlineData(HotkeyModifiers.Win, 0x5B, HotkeyKeyAction.KeepListening)]
     [InlineData(HotkeyModifiers.Control | HotkeyModifiers.Shift, 0xA0, HotkeyKeyAction.KeepListening)]

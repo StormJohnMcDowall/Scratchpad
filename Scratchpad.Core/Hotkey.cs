@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -42,6 +43,21 @@ namespace Scratchpad.Core
             return (virtualKey >= 0x10 && virtualKey <= 0x12)
                 || virtualKey == 0x5B || virtualKey == 0x5C
                 || (virtualKey >= 0xA0 && virtualKey <= 0xA5);
+        }
+
+        /// <summary>
+        /// The modifiers held right now, given a "is this virtual key down?" check. WPF's
+        /// Keyboard.Modifiers only reports Alt, Ctrl and Shift — never Win — so the Shell asks
+        /// about each key itself, generic and left/right forms alike.
+        /// </summary>
+        public static HotkeyModifiers HeldModifiers(Func<int, bool> isKeyDown)
+        {
+            var modifiers = HotkeyModifiers.None;
+            if (isKeyDown(0x5B) || isKeyDown(0x5C)) modifiers |= HotkeyModifiers.Win;
+            if (isKeyDown(0x11) || isKeyDown(0xA2) || isKeyDown(0xA3)) modifiers |= HotkeyModifiers.Control;
+            if (isKeyDown(0x12) || isKeyDown(0xA4) || isKeyDown(0xA5)) modifiers |= HotkeyModifiers.Alt;
+            if (isKeyDown(0x10) || isKeyDown(0xA0) || isKeyDown(0xA1)) modifiers |= HotkeyModifiers.Shift;
+            return modifiers;
         }
 
         public static HotkeyKeyAction Classify(HotkeyModifiers modifiers, int virtualKey)
