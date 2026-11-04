@@ -165,8 +165,8 @@ These are the plan author's calls, not the user's:
 ## Manual test on Windows (for the user)
 
 1. Select parts of 3 lines and press Tab. All 3 lines gain 4 spaces and stay selected. Press Tab again and they gain 4 more.
-2. Press Shift+Tab twice. The lines are back where they started. Press Ctrl+Z, and one step comes back per press.
+2. Press Shift+Tab twice. The lines are back where they started. Press Ctrl+Z, and one step comes back per press, and after each undo the caret or selection is back where it was before that key (not whole lines selected).
 3. Paste code indented by 8 spaces or by tabs, select it, and press Shift+Tab. One level comes off each line. Lines already at the margin don't move.
 4. Put the caret mid-line on an indented list item and press Shift+Tab. That line unindents, and the caret stays on the same character.
-5. With no selection, press Tab. It still types a tab character.
+5. With no selection, press Tab. It still types a tab character. Select two blank lines and press Tab: nothing is deleted.
 6. In the Settings window, Tab and Shift+Tab still move between controls. In preview mode, Tab does nothing to the text.
