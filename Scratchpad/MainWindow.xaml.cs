@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -28,6 +29,15 @@ namespace Scratchpad
         private readonly PeekStore _peekStore = new PeekStore(PeekStore.DefaultFilePath);
         private PeekSettings _peekSettings;
         private readonly DispatcherTimer _peekTimer;
+        private enum PeekState { Idle, SlidingOut, Away, SlidingBack }
+        // TimeSpan.Zero turns the slide off: the note then jumps off-screen and back.
+        private static readonly TimeSpan PeekSlideDuration = TimeSpan.FromMilliseconds(200);
+        private PeekState _peekState;
+        private double _peekHomeTop;
+        private double _slideFrom;
+        private double _slideTo;
+        private readonly Stopwatch _slideClock = new Stopwatch();
+        private bool _isSlideFrameAttached;
         private SettingsWindow _settingsWindow;
         private readonly PreviewNavigator _previewNavigator;
         private readonly ThemeManager _themeManager;
@@ -484,6 +494,14 @@ namespace Scratchpad
             if (WindowState == WindowState.Maximized)
             {
                 WindowState = WindowState.Normal;
+            }
+
+            // Clicking the taskbar button of the (still active) off-screen note minimises it;
+            // the user meant "bring it back", so do that instead.
+            if (WindowState == WindowState.Minimized && _peekState != PeekState.Idle)
+            {
+                WindowState = WindowState.Normal;
+                CancelPeek();
             }
         }
 
@@ -960,49 +978,133 @@ namespace Scratchpad
             }
         }
 
+        // A peek slides the note off the bottom of the desktop rather than hiding it, so its
+        // taskbar button stays. Only Top moves; _peekHomeTop is where it goes back to.
         private void StartPeek()
         {
-            _peekTimer.Interval = TimeSpan.FromSeconds(_peekSettings.Seconds);
-            Hide();
-            _peekTimer.Start();
+            switch (_peekState)
+            {
+                case PeekState.Idle:
+                    _peekHomeTop = Top;
+                    break;
+                case PeekState.SlidingBack:
+                    // Re-peeked on the way back: leave from here, but still return home.
+                    break;
+                default:
+                    // Already leaving or away: nothing on-screen to click, but stay safe anyway.
+                    return;
+            }
+
+            BeginSlide(SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight, PeekState.SlidingOut);
         }
 
         private void OnPeekTimerTick(object sender, EventArgs e)
         {
             _peekTimer.Stop();
-            if (_isExiting)
+            if (_isExiting || _peekState != PeekState.Away)
             {
                 return;
             }
-            ShowWithoutActivating();
+            BeginSlide(_peekHomeTop, PeekState.SlidingBack);
         }
 
-        // The peek's own return: the user is busy in whatever was underneath, so keep their
-        // focus there. ShowActivated decides SW_SHOWNA vs SW_SHOW on every Show(), not just the
-        // first.
-        private void ShowWithoutActivating()
+        private void BeginSlide(double to, PeekState state)
         {
-            ShowActivated = false;
-            Show();
-            ShowActivated = true;
+            _peekState = state;
+            _slideFrom = Top;
+            _slideTo = to;
 
-            // SW_SHOWNA re-shows the note at its old z-order slot, but hiding it activated the
-            // window underneath, which rose above that slot — so without always-on-top the note
-            // would come back hidden behind it. WPF's Topmost setter raises with SWP_NOACTIVATE,
-            // so this brings it to the front without taking focus or changing the user's choice.
-            if (!Topmost)
+            if (PeekSlideDuration <= TimeSpan.Zero)
             {
-                Topmost = true;
-                Topmost = false;
+                DetachSlideFrames();
+                Top = to;
+                FinishSlide();
+                return;
             }
+
+            _slideClock.Restart();
+            if (!_isSlideFrameAttached)
+            {
+                CompositionTarget.Rendering += OnSlideFrame;
+                _isSlideFrameAttached = true;
+            }
+        }
+
+        // Once per WPF frame, so the slide keeps pace with the display rather than a timer.
+        private void OnSlideFrame(object sender, EventArgs e)
+        {
+            var progress = _slideClock.Elapsed.TotalMilliseconds / PeekSlideDuration.TotalMilliseconds;
+            Top = PeekSlide.Interpolate(_slideFrom, _slideTo, progress, accelerate: _peekState == PeekState.SlidingOut);
+            if (progress >= 1)
+            {
+                DetachSlideFrames();
+                FinishSlide();
+            }
+        }
+
+        private void FinishSlide()
+        {
+            if (_peekState == PeekState.SlidingOut)
+            {
+                _peekState = PeekState.Away;
+                _peekTimer.Interval = TimeSpan.FromSeconds(_peekSettings.Seconds);
+                _peekTimer.Start();
+            }
+            else if (_peekState == PeekState.SlidingBack)
+            {
+                Top = _peekHomeTop;
+                _peekState = PeekState.Idle;
+
+                // If the user clicked a window underneath while the note was away, that window
+                // rose above it. WPF's Topmost setter raises with SWP_NOACTIVATE, so this brings
+                // the note to the front without taking focus or changing always-on-top.
+                if (!Topmost)
+                {
+                    Topmost = true;
+                    Topmost = false;
+                }
+            }
+        }
+
+        private void DetachSlideFrames()
+        {
+            if (_isSlideFrameAttached)
+            {
+                CompositionTarget.Rendering -= OnSlideFrame;
+                _isSlideFrameAttached = false;
+            }
+        }
+
+        // Puts the note straight back home. Everything that interrupts a peek (showing, closing,
+        // exiting, a taskbar click) comes through here, so an off-screen Top is never saved.
+        private void CancelPeek()
+        {
+            if (_peekState == PeekState.Idle)
+            {
+                return;
+            }
+            _peekTimer.Stop();
+            DetachSlideFrames();
+            Top = _peekHomeTop;
+            _peekState = PeekState.Idle;
         }
 
         // A tray click: ends a peek early (with focus, as Show does); otherwise it does nothing.
         public void EndPeekEarly()
         {
-            if (_peekTimer.IsEnabled)
+            if (_peekState != PeekState.Idle)
             {
                 ShowAndActivate();
+            }
+        }
+
+        // Only the user can activate an off-screen note (taskbar button, Alt+Tab), so that ends
+        // the peek. A peek normally starts with the note already active, which raises nothing.
+        private void Window_Activated(object sender, EventArgs e)
+        {
+            if (_peekState == PeekState.SlidingOut || _peekState == PeekState.Away)
+            {
+                CancelPeek();
             }
         }
 
@@ -1077,6 +1179,9 @@ namespace Scratchpad
             // pending change.
             _autosave.Flush();
 
+            // Back home before the placement below is read, so a peek never saves off-screen.
+            CancelPeek();
+
             // Left/Top/Width/Height are still Double.NaN if this window was never shown (e.g.
             // the app started minimized to the tray and was exited straight from the tray menu)
             // — Window_Loaded is what assigns them real values. Saving NaN would otherwise throw
@@ -1112,9 +1217,8 @@ namespace Scratchpad
 
         public void ShowAndActivate()
         {
-            // Any other way of showing the note ends a peek. Otherwise its timer would still be
-            // running, and if the user hid the note again before it fired, it would pop back up.
-            _peekTimer.Stop();
+            // Any other way of showing the note ends a peek, putting it straight back home.
+            CancelPeek();
             Show();
             if (WindowState == WindowState.Minimized)
             {
@@ -1137,7 +1241,7 @@ namespace Scratchpad
         public void MarkExiting()
         {
             _isExiting = true;
-            _peekTimer.Stop();
+            CancelPeek();
         }
     }
 }
