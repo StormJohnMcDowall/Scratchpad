@@ -39,18 +39,18 @@ namespace Scratchpad.Core
 
     public static class CodeHighlighter
     {
-        private static readonly Dictionary<string, string> LanguageIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, ILanguage> LanguagesByTag = new Dictionary<string, ILanguage>(StringComparer.OrdinalIgnoreCase)
         {
-            ["csharp"] = LanguageId.CSharp,
-            ["cs"] = LanguageId.CSharp,
-            ["c#"] = LanguageId.CSharp,
-            ["json"] = "json",
-            ["js"] = LanguageId.JavaScript,
-            ["javascript"] = LanguageId.JavaScript,
-            ["html"] = LanguageId.Html,
-            ["htm"] = LanguageId.Html,
-            ["xml"] = LanguageId.Xml,
-            ["css"] = LanguageId.Css,
+            ["csharp"] = Languages.CSharp,
+            ["cs"] = Languages.CSharp,
+            ["c#"] = Languages.CSharp,
+            ["json"] = new SafeJson(),
+            ["js"] = Languages.JavaScript,
+            ["javascript"] = Languages.JavaScript,
+            ["html"] = Languages.Html,
+            ["htm"] = Languages.Html,
+            ["xml"] = Languages.Xml,
+            ["css"] = Languages.Css,
         };
 
         private static readonly Dictionary<string, CodeTokenKind> Kinds = new Dictionary<string, CodeTokenKind>
@@ -139,7 +139,38 @@ namespace Scratchpad.Core
             }
 
             var firstWord = infoString.Trim().Split((char[])null, 2, StringSplitOptions.RemoveEmptyEntries)[0];
-            return LanguageIds.TryGetValue(firstWord, out var id) ? Languages.FindById(id) : null;
+            return LanguagesByTag.TryGetValue(firstWord, out var language) ? language : null;
+        }
+
+        // ColorCode's own JSON grammar with its string pattern replaced. Its "[^"\\]*(?:\\[^\r\n]|
+        // [^"\\]*)*" nests [^"\\]* inside a repeat, which backtracks exponentially when a quote
+        // never closes and froze the preview on truncated JSON. These alternatives can't match the
+        // same character, so a failed match stays linear. A distinct Id keeps ColorCode's
+        // compiled-language cache from mixing it up with the built-in "json".
+        private sealed class SafeJson : ILanguage
+        {
+            private const string StringPattern = @"""(?:[^""\\]|\\.)*""";
+
+            public string Id => "scratchpad-json";
+
+            public string Name => "JSON";
+
+            public string CssClassName => "json";
+
+            public string FirstLinePattern => null;
+
+            public IList<LanguageRule> Rules { get; } = new List<LanguageRule>
+            {
+                new LanguageRule(@"[,\{]\s*(" + StringPattern + @")\s*:", new Dictionary<int, string> { { 1, ScopeName.JsonKey } }),
+                new LanguageRule(StringPattern, new Dictionary<int, string> { { 0, ScopeName.JsonString } }),
+                new LanguageRule(@"-?(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?", new Dictionary<int, string> { { 0, ScopeName.JsonNumber } }),
+                new LanguageRule(@"\b(true|false|null)\b", new Dictionary<int, string> { { 1, ScopeName.JsonConst } }),
+            };
+
+            public bool HasAlias(string lang)
+            {
+                return false;
+            }
         }
 
         // ColorCode only hands out its parser to formatters, so this is a "formatter" that keeps

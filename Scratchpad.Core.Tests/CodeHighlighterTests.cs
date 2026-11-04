@@ -116,6 +116,31 @@ public class CodeHighlighterTests
         Assert.DoesNotContain(tokens, t => t.Text.Length == 0);
     }
 
+    // ColorCode's own JSON string rule backtracks exponentially when a quote never closes
+    // (26 letters took over 30 s), which would freeze the preview. Run on a worker so a
+    // regression fails here instead of hanging the suite.
+    [Fact]
+    public void Tokenize_JsonWithUnclosedQuote_FinishesQuickly()
+    {
+        var code = "{\"key\": 1,\n\"truncatedvaluewithnoclosingquoteatall {\n";
+        IReadOnlyList<CodeToken> tokens = null;
+
+        var finished = System.Threading.Tasks.Task.Run(() => tokens = CodeHighlighter.Tokenize(code, "json")).Wait(2000);
+
+        Assert.True(finished, "Tokenize hung on an unclosed JSON string");
+        Assert.Equal(code, Joined(tokens));
+    }
+
+    [Fact]
+    public void Tokenize_JsonEscapedQuoteStaysInsideTheString()
+    {
+        var code = "{\"a\": \"say \\\"hi\\\"\"}";
+
+        var tokens = CodeHighlighter.Tokenize(code, "json");
+
+        Assert.Equal(CodeTokenKind.String, KindOf(tokens, "\"say \\\"hi\\\"\""));
+    }
+
     [Fact]
     public void Tokenize_AdjacentSameKindTokensAreMerged()
     {
