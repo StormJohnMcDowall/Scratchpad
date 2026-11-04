@@ -14,6 +14,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <GroupBox Grid.Row="0" Header="Appearance" Margin="8,8,8,0">
             <Grid Margin="8">
@@ -54,7 +55,27 @@
                 <TextBlock Text="seconds" VerticalAlignment="Center" />
             </StackPanel>
         </GroupBox>
-        <GroupBox Grid.Row="4" Header="Fonts" Margin="8">
+        <GroupBox Grid.Row="4" Header="Hotkey" Margin="8,8,8,0">
+            <Grid Margin="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Label Grid.Column="0" Content="Show note" VerticalAlignment="Center" />
+                <!-- Click it and press a combination; it records exactly that (see SettingsWindow.xaml.cs). -->
+                <DockPanel Grid.Column="1">
+                    <Button DockPanel.Dock="Right" x:Name="HotkeyNoneButton" Content="None" Padding="8,2" Margin="6,0,0,0" Click="HotkeyNoneButton_Click" />
+                    <TextBox x:Name="HotkeyTextBox" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Arrow"
+                             VerticalContentAlignment="Center" Padding="2" />
+                </DockPanel>
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="HotkeyMessageTextBlock" Margin="2,4,0,0" TextWrapping="Wrap" />
+            </Grid>
+        </GroupBox>
+        <GroupBox Grid.Row="5" Header="Fonts" Margin="8">
             <StackPanel Margin="8">
                 <Grid Margin="0,4">
                     <Grid.ColumnDefinitions>
@@ -82,6 +103,6 @@
                 </Grid>
             </StackPanel>
         </GroupBox>
-        <Button Grid.Row="5" x:Name="ResetButton" HorizontalAlignment="Right" Content="Reset to defaults" Click="ResetButton_Click" Padding="8,4" Margin="8,0,8,8" />
+        <Button Grid.Row="6" x:Name="ResetButton" HorizontalAlignment="Right" Content="Reset to defaults" Click="ResetButton_Click" Padding="8,4" Margin="8,0,8,8" />
     </Grid>
 </Window>

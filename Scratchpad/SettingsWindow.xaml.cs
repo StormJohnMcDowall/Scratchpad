@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Scratchpad.Core;
@@ -26,16 +27,25 @@ namespace Scratchpad
         private bool _isUpdatingSelection;
         private AppTheme _theme;
         private int _peekSeconds;
+        private HotkeySettings _hotkey;
+        private bool _hotkeyWorking;
+        private bool _isRecordingHotkey;
 
         public event Action<FontFamilySettings> SettingsChanged;
         public event Action<ThemePreference> ThemePreferenceChanged;
         public event Action<bool> ShowWindowOnStartupChanged;
         public event Action<string> DateFormatChanged;
         public event Action<int> PeekSecondsChanged;
+        // Recording suspends the live hotkey (so pressing it reaches the box); ended is always
+        // raised before chosen, so the old key is back in place before the swap is attempted.
+        public event Action HotkeyCaptureStarted;
+        public event Action HotkeyCaptureEnded;
+        public event Action<HotkeySettings> HotkeyChosen;
         public event Action ResetRequested;
 
         public SettingsWindow(FontFamilySettings current, ThemePreference currentThemePreference, AppTheme currentTheme,
-            bool showWindowOnStartup, string dateFormat, int peekSeconds, IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
+            bool showWindowOnStartup, string dateFormat, int peekSeconds, HotkeySettings hotkey, bool hotkeyWorking,
+            IReadOnlyList<FontFamily> monospaceFamilies, IReadOnlyList<FontFamily> normalTextFamilies)
         {
             InitializeComponent();
             _theme = currentTheme;
@@ -52,6 +62,7 @@ namespace Scratchpad
             _monospaceFamilies = monospaceFamilies;
             _normalTextFamilies = normalTextFamilies;
             ShowSettings(current, currentThemePreference, showWindowOnStartup, dateFormat, peekSeconds);
+            ShowHotkey(hotkey, hotkeyWorking, null);
 
             ThemeComboBox.SelectionChanged += (s, e) => RaiseThemePreferenceChanged();
             ShowOnStartupCheckBox.Checked += (s, e) => RaiseShowWindowOnStartupChanged();
@@ -62,6 +73,145 @@ namespace Scratchpad
             EditorFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewNormalFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
             PreviewCodeFontComboBox.SelectionChanged += (s, e) => RaiseSettingsChanged();
+            HotkeyTextBox.GotKeyboardFocus += (s, e) => StartRecordingHotkey();
+            // A click on the box when it already has focus (e.g. after recording one key) records again.
+            HotkeyTextBox.PreviewMouseLeftButtonDown += (s, e) => StartRecordingHotkey();
+            HotkeyTextBox.PreviewKeyDown += HotkeyTextBox_PreviewKeyDown;
+            HotkeyTextBox.LostKeyboardFocus += (s, e) => StopRecordingHotkey();
+            // Closing mid-recording must still hand the suspended hotkey back.
+            Closed += (s, e) => StopRecordingHotkey();
+        }
+
+        /// <summary>
+        /// Shows the hotkey in use and a line about it. refused is the key Windows just turned
+        /// down (only right after a failed change); working is false when the current key isn't
+        /// registered, e.g. another program had it at startup.
+        /// </summary>
+        public void ShowHotkey(HotkeySettings current, bool working, HotkeySettings? refused)
+        {
+            _hotkey = current;
+            _hotkeyWorking = working;
+            if (!_isRecordingHotkey)
+            {
+                HotkeyTextBox.Text = Hotkey.Format(current);
+            }
+
+            if (refused.HasValue)
+            {
+                ShowHotkeyMessage(Hotkey.Format(refused.Value) + " is in use by another program. "
+                    + (current.IsNone ? "Still no hotkey." : "Still using " + Hotkey.Format(current) + "."), true);
+            }
+            else if (!working && !current.IsNone)
+            {
+                ShowHotkeyMessage(Hotkey.Format(current) + " is in use by another program, so it isn't working. Choose another key.", true);
+            }
+            else
+            {
+                ShowHotkeyMessage(current.IsNone ? "No hotkey." : "Brings the note forward from any app.", false);
+            }
+        }
+
+        // Same colouring as the Date example: a resource reference so a theme switch follows.
+        private void ShowHotkeyMessage(string text, bool isWarning)
+        {
+            HotkeyMessageTextBlock.Text = text;
+            if (isWarning)
+            {
+                HotkeyMessageTextBlock.SetResourceReference(TextBlock.ForegroundProperty, "SettingsWarningBrush");
+            }
+            else
+            {
+                HotkeyMessageTextBlock.ClearValue(TextBlock.ForegroundProperty);
+            }
+        }
+
+        private void StartRecordingHotkey()
+        {
+            if (_isRecordingHotkey)
+            {
+                return;
+            }
+
+            _isRecordingHotkey = true;
+            HotkeyCaptureStarted?.Invoke();
+            HotkeyTextBox.Text = "Press a key combination…";
+            ShowHotkeyMessage("", false);
+        }
+
+        // Safe to call when not recording: leaving the box, closing and choosing all end up here.
+        private void StopRecordingHotkey()
+        {
+            if (!_isRecordingHotkey)
+            {
+                return;
+            }
+
+            _isRecordingHotkey = false;
+            ShowHotkey(_hotkey, _hotkeyWorking, null);
+            HotkeyCaptureEnded?.Invoke();
+        }
+
+        private void HotkeyTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!_isRecordingHotkey)
+            {
+                return;
+            }
+
+            // With Alt held WPF reports Key.System and the real key separately; IME and dead-key
+            // processing hide it the same way.
+            var key = e.Key == Key.System ? e.SystemKey
+                : e.Key == Key.ImeProcessed ? e.ImeProcessedKey
+                : e.Key == Key.DeadCharProcessed ? e.DeadCharProcessedKey
+                : e.Key;
+            var virtualKey = KeyInterop.VirtualKeyFromKey(key);
+            var modifiers = ToHotkeyModifiers(Keyboard.Modifiers);
+
+            switch (Hotkey.Classify(modifiers, virtualKey))
+            {
+                case HotkeyKeyAction.KeepListening:
+                    e.Handled = true;
+                    break;
+                case HotkeyKeyAction.Cancel:
+                    e.Handled = true;
+                    StopRecordingHotkey();
+                    break;
+                case HotkeyKeyAction.MoveFocus:
+                    // Left for WPF: Tab moves on, and LostKeyboardFocus stops recording.
+                    break;
+                case HotkeyKeyAction.NeedsModifier:
+                    e.Handled = true;
+                    ShowHotkeyMessage("Include Win, Ctrl or Alt.", true);
+                    break;
+                default:
+                    e.Handled = true;
+                    var chosen = new HotkeySettings { Modifiers = modifiers, VirtualKey = virtualKey };
+                    // A key WPF has no virtual-key code for comes back as 0, which would read
+                    // as None and silently turn the hotkey off.
+                    if (!Hotkey.IsValid(chosen))
+                    {
+                        break;
+                    }
+                    StopRecordingHotkey();
+                    HotkeyChosen?.Invoke(chosen);
+                    break;
+            }
+        }
+
+        private static HotkeyModifiers ToHotkeyModifiers(ModifierKeys keys)
+        {
+            var modifiers = HotkeyModifiers.None;
+            if ((keys & ModifierKeys.Windows) != 0) modifiers |= HotkeyModifiers.Win;
+            if ((keys & ModifierKeys.Control) != 0) modifiers |= HotkeyModifiers.Control;
+            if ((keys & ModifierKeys.Alt) != 0) modifiers |= HotkeyModifiers.Alt;
+            if ((keys & ModifierKeys.Shift) != 0) modifiers |= HotkeyModifiers.Shift;
+            return modifiers;
+        }
+
+        private void HotkeyNoneButton_Click(object sender, RoutedEventArgs e)
+        {
+            StopRecordingHotkey();
+            HotkeyChosen?.Invoke(HotkeySettings.None);
         }
 
         // Re-selects the pickers to match settings changed from outside this window (a reset).

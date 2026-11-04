@@ -684,6 +684,7 @@ namespace Scratchpad
 
             var settingsWindow = new SettingsWindow(_fontFamilySettings, _themeManager.Preference, _themeManager.Current,
                 _startupWindowSettings.ShowWindowOnStartup, _dateFormatSettings.Format, _peekSettings.Seconds,
+                _globalHotkey.Current, IsHotkeyWorking(),
                 FontCatalog.MonospaceFamilies, FontCatalog.NormalTextFamilies);
             // Without an Owner, Windows places the window at its default cascade position
             // (top-left), unrelated to wherever the user has parked Scratchpad. Owning it also
@@ -711,9 +712,34 @@ namespace Scratchpad
             // SelectionChanged is still on the stack — let that handler finish first.
             settingsWindow.ThemePreferenceChanged += preference =>
                 Dispatcher.BeginInvoke(new Action(() => _themeManager.SetPreference(preference)));
+            settingsWindow.HotkeyCaptureStarted += () => _globalHotkey.Suspend();
+            // Shows the outcome, so a key another program grabbed mid-recording is reported.
+            settingsWindow.HotkeyCaptureEnded += () =>
+            {
+                _globalHotkey.Resume();
+                _settingsWindow?.ShowHotkey(_globalHotkey.Current, IsHotkeyWorking(), null);
+            };
+            settingsWindow.HotkeyChosen += ApplyChosenHotkey;
             settingsWindow.Closed += (s, args) => _settingsWindow = null;
             _settingsWindow = settingsWindow;
             settingsWindow.Show();
+        }
+
+        private bool IsHotkeyWorking() => _globalHotkey.IsRegistered || _globalHotkey.Current.IsNone;
+
+        // Saved only once Windows has granted it: a refused key leaves the old one registered
+        // and saved, so the user is never left without a hotkey they didn't choose to lose.
+        private void ApplyChosenHotkey(HotkeySettings chosen)
+        {
+            if (_globalHotkey.TryChange(chosen))
+            {
+                _hotkeyStore.Save(chosen);
+                _settingsWindow?.ShowHotkey(chosen, true, null);
+            }
+            else
+            {
+                _settingsWindow?.ShowHotkey(_globalHotkey.Current, IsHotkeyWorking(), chosen);
+            }
         }
 
         private void OnFontFamilySettingsChanged(FontFamilySettings settings)
@@ -754,6 +780,9 @@ namespace Scratchpad
 
             _peekSettings = PeekStore.Defaults;
             _peekStore.Save(_peekSettings);
+
+            // Same rule as any change: if Win+Shift+N is taken, warn and keep the current key.
+            ApplyChosenHotkey(HotkeyStore.Defaults);
 
             _settingsWindow?.ShowSettings(_fontFamilySettings, _themeManager.Preference, _startupWindowSettings.ShowWindowOnStartup,
                 _dateFormatSettings.Format, _peekSettings.Seconds);
