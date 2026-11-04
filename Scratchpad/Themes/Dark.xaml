@@ -27,6 +27,21 @@
     <SolidColorBrush x:Key="PreviewTableBorderBrush" Color="#5A5130" />
     <SolidColorBrush x:Key="SettingsWarningBrush" Color="#F2A07B" />
 
+    <!-- Syntax colours for highlighted code: Visual Studio's dark palette on the dark code
+         background (PreviewCodeBackgroundBrush). -->
+    <SolidColorBrush x:Key="PreviewCodeKeywordBrush" Color="#569CD6" />
+    <SolidColorBrush x:Key="PreviewCodeStringBrush" Color="#D69D85" />
+    <SolidColorBrush x:Key="PreviewCodeCommentBrush" Color="#57A64A" />
+    <SolidColorBrush x:Key="PreviewCodeNumberBrush" Color="#B5CEA8" />
+    <SolidColorBrush x:Key="PreviewCodeTypeNameBrush" Color="#4EC9B0" />
+    <SolidColorBrush x:Key="PreviewCodePreprocessorBrush" Color="#9B9B9B" />
+    <SolidColorBrush x:Key="PreviewCodeMarkupDelimiterBrush" Color="#A0A0A0" />
+    <SolidColorBrush x:Key="PreviewCodeMarkupElementBrush" Color="#569CD6" />
+    <SolidColorBrush x:Key="PreviewCodeMarkupAttributeBrush" Color="#9CDCFE" />
+    <SolidColorBrush x:Key="PreviewCodeMarkupAttributeValueBrush" Color="#CE9178" />
+    <SolidColorBrush x:Key="PreviewCodeMarkupEntityBrush" Color="#D69D85" />
+    <SolidColorBrush x:Key="PreviewCodeJsonKeyBrush" Color="#9CDCFE" />
+
     <!-- Keyboard-focus outline: the system's black dots vanish on dark paper. Used by every
          focusable control styled in this file, and by MainWindow's buttons (via Light.xaml's
          same-named key in light). -->

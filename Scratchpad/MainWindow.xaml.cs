@@ -290,9 +290,51 @@ namespace Scratchpad
 
             if (e.OriginalSource is Run run && point != null)
             {
-                return PreviewSourceMap.LocateInBlock(text, map[index], run.Text, _previewNavigator.OffsetInRun(run, point.Value));
+                var offsetInRun = _previewNavigator.OffsetInRun(run, point.Value);
+                var lineText = CodeLineAround(run, offsetInRun, out var offsetInLine);
+                return lineText != null
+                    ? PreviewSourceMap.LocateInBlock(text, map[index], lineText, offsetInLine)
+                    : PreviewSourceMap.LocateInBlock(text, map[index], run.Text, offsetInRun);
             }
             return map[index].Start;
+        }
+
+        // A highlighted code line is several Runs, and a short one ("i") would be found at its
+        // first occurrence anywhere in the block, so search for the whole line instead, as before
+        // highlighting split it. Null when the run isn't in a code block.
+        private string CodeLineAround(Run run, int offsetInRun, out int offsetInLine)
+        {
+            offsetInLine = offsetInRun;
+            var codeBlockStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeBlockStyleKey) as Style;
+            if (!(run.Parent is Paragraph paragraph) || codeBlockStyle == null || !ReferenceEquals(paragraph.Style, codeBlockStyle))
+            {
+                return null;
+            }
+
+            var line = new System.Text.StringBuilder();
+            var foundRun = false;
+            foreach (var inline in paragraph.Inlines)
+            {
+                if (inline is LineBreak)
+                {
+                    if (foundRun)
+                    {
+                        break;
+                    }
+                    line.Clear();
+                }
+                else if (inline is Run piece)
+                {
+                    if (ReferenceEquals(piece, run))
+                    {
+                        foundRun = true;
+                        offsetInLine = line.Length + offsetInRun;
+                    }
+                    line.Append(piece.Text);
+                }
+            }
+
+            return foundRun ? line.ToString() : null;
         }
 
         private static int IndexOfUnit(IReadOnlyList<Block> units, Block block)
@@ -408,11 +450,112 @@ namespace Scratchpad
         private void RenderPreview()
         {
             PreviewViewer.Markdown = EditorTextBox.Text;
+            HighlightCodeBlocks();
             ApplyPreviewFontSize();
             ApplyPreviewFonts();
             ApplyPreviewTheme();
             ApplyPreviewBackground();
             WireTaskListCheckBoxes();
+        }
+
+        // Markdig.Wpf draws a fenced block as one code-style Paragraph of Runs (one per line) and
+        // LineBreaks, and drops the language tag, so the tag comes from the source map, paired
+        // unit-for-unit as double-click does. Each tagged block's inlines are swapped for one Run
+        // per token; coloured runs hold a resource reference, so a theme switch recolours them,
+        // and plain runs keep inheriting the paragraph ink ApplyPreviewTheme sets. The text is
+        // rebuilt from the current inlines, not the source, so this is safe to repeat: Markdig.Wpf
+        // keeps the same FlowDocument for unchanged text, so a re-shown preview arrives already
+        // highlighted.
+        private void HighlightCodeBlocks()
+        {
+            if (PreviewViewer.Document == null)
+            {
+                return;
+            }
+
+            var units = _previewNavigator.GetUnits();
+            var map = PreviewSourceMap.Build(EditorTextBox.Text);
+            if (units.Count != map.Count)
+            {
+                return;
+            }
+
+            var codeBlockStyle = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeBlockStyleKey) as Style;
+            if (codeBlockStyle == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < units.Count; i++)
+            {
+                if (!(units[i] is Paragraph paragraph) || !ReferenceEquals(paragraph.Style, codeBlockStyle)
+                    || !CodeHighlighter.IsSupported(map[i].CodeLanguage))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    HighlightCodeBlock(paragraph, map[i].CodeLanguage);
+                }
+                catch (Exception)
+                {
+                    // Leave this block as Markdig.Wpf drew it; the rest still get coloured.
+                }
+            }
+        }
+
+        private static void HighlightCodeBlock(Paragraph paragraph, string language)
+        {
+            var text = new System.Text.StringBuilder();
+            foreach (var inline in paragraph.Inlines)
+            {
+                if (inline is Run run)
+                {
+                    text.Append(run.Text);
+                }
+                else if (inline is LineBreak)
+                {
+                    text.Append('\n');
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            var tokens = CodeHighlighter.Tokenize(text.ToString(), language);
+            if (tokens == null)
+            {
+                return;
+            }
+
+            var inlines = new List<Inline>();
+            foreach (var token in tokens)
+            {
+                var pieces = token.Text.Split('\n');
+                for (var p = 0; p < pieces.Length; p++)
+                {
+                    if (p > 0)
+                    {
+                        inlines.Add(new LineBreak());
+                    }
+                    if (pieces[p].Length == 0)
+                    {
+                        continue;
+                    }
+
+                    var run = new Run(pieces[p]);
+                    if (token.Kind != CodeTokenKind.Plain)
+                    {
+                        run.SetResourceReference(TextElement.ForegroundProperty, "PreviewCode" + token.Kind + "Brush");
+                    }
+                    inlines.Add(run);
+                }
+            }
+
+            paragraph.Inlines.Clear();
+            paragraph.Inlines.AddRange(inlines);
         }
 
         // Markdig.Wpf creates a fresh FlowDocument whenever the Markdown text changes (the same reason
