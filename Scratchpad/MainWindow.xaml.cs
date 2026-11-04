@@ -1495,8 +1495,6 @@ namespace Scratchpad
             _globalHotkey.Dispose();
         }
 
-        // Called by App once the tray icon exists, so a key another program already owns can be
-        // reported there — otherwise the hotkey would just silently not work.
         // Called by App as the app exits. Only once the note was loaded this session: before
         // that the editor is empty, and an empty "backup" would look newer than the real note.
         public void WriteExitBackup()
@@ -1521,6 +1519,8 @@ namespace Scratchpad
             }
         }
 
+        // Called by App once the tray icon exists, so a key another program already owns can be
+        // reported there — otherwise the hotkey would just silently not work.
         public void StartGlobalHotkey(Action<string> showWarning)
         {
             try

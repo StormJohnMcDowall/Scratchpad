@@ -93,6 +93,21 @@ public class BackupRulesTests
         Assert.True(BackupRules.IsHourlyCopyDue(Now, Now.AddMinutes(60)));
     }
 
+    // A copy from the "future" (the clock was set back since) mustn't stop hourly copies.
+    [Fact]
+    public void IsHourlyCopyDue_NewestCopyInTheFuture_IsTrue()
+    {
+        Assert.True(BackupRules.IsHourlyCopyDue(Now.AddDays(3), Now));
+    }
+
+    // A racing autosave callback can run a moment "before" the copy just written; that isn't
+    // a clock change and mustn't write a second copy.
+    [Fact]
+    public void IsHourlyCopyDue_NewestCopySecondsAhead_IsFalse()
+    {
+        Assert.False(BackupRules.IsHourlyCopyDue(Now.AddSeconds(2), Now));
+    }
+
     [Fact]
     public void FileName_Regular()
     {

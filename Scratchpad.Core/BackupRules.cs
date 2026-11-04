@@ -25,6 +25,7 @@ namespace Scratchpad.Core
         private const int BigDeleteAlways = 1000;
         private const int HalfNoteFloor = 100;
         private static readonly TimeSpan HourlyInterval = TimeSpan.FromHours(1);
+        private static readonly TimeSpan ClockSetBackSlack = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan KeepEverything = TimeSpan.FromHours(48);
         private const int KeepDailyDays = 30;
 
@@ -66,9 +67,15 @@ namespace Scratchpad.Core
                 || (before.Length >= HalfNoteFloor && removed * 2 >= before.Length);
         }
 
+        // A newest copy well "in the future" means the clock was set back since (or DST fell
+        // back); waiting for real time to catch up would silently stop hourly copies, so it's
+        // due. The minute's slack keeps a racing autosave callback (milliseconds behind the copy
+        // just written) from counting as a clock change.
         public static bool IsHourlyCopyDue(DateTime? newestRegular, DateTime now)
         {
-            return newestRegular == null || now - newestRegular.Value >= HourlyInterval;
+            return newestRegular == null
+                || newestRegular.Value - now > ClockSetBackSlack
+                || now - newestRegular.Value >= HourlyInterval;
         }
 
         public static string FileName(DateTime time, BackupKind kind)
