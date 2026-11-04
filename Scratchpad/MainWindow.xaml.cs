@@ -1103,6 +1103,15 @@ namespace Scratchpad
             EditorTextBox.Focus();
         }
 
+        // Replaces just the touched lines via SelectedText, which keeps it one undoable edit and
+        // leaves the scroll position alone, then selects what LineIndenter says to.
+        private void ApplyIndentEdit(IndentEdit edit)
+        {
+            EditorTextBox.Select(edit.ReplaceStart, edit.ReplaceLength);
+            EditorTextBox.SelectedText = edit.Replacement;
+            EditorTextBox.Select(edit.SelectionStart, edit.SelectionLength);
+        }
+
         private void AlwaysOnTopToggleButton_Click(object sender, RoutedEventArgs e)
         {
             Topmost = AlwaysOnTopToggleButton.IsChecked == true;
@@ -1269,6 +1278,27 @@ namespace Scratchpad
             else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.OemSemicolon)
             {
                 InsertDate();
+                e.Handled = true;
+            }
+            else if (EditorTextBox.IsKeyboardFocused && e.Key == Key.Tab && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                // Null when the selection stays on one line: Tab is left to type a tab as usual.
+                var edit = LineIndenter.Indent(EditorTextBox.Text, EditorTextBox.SelectionStart, EditorTextBox.SelectionLength);
+                if (edit != null)
+                {
+                    ApplyIndentEdit(edit);
+                    e.Handled = true;
+                }
+            }
+            else if (EditorTextBox.IsKeyboardFocused && e.Key == Key.Tab && Keyboard.Modifiers == ModifierKeys.Shift)
+            {
+                var edit = LineIndenter.Outdent(EditorTextBox.Text, EditorTextBox.SelectionStart, EditorTextBox.SelectionLength);
+                if (edit != null)
+                {
+                    ApplyIndentEdit(edit);
+                }
+                // Handled even when there was nothing to remove, so Shift+Tab never moves focus
+                // out of the note.
                 e.Handled = true;
             }
             else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.T)
