@@ -51,6 +51,11 @@ namespace Scratchpad
         // longer or slightly shorter version of itself, which BackupRules.RemovedLength counts as
         // the whole selection removed: Ctrl+A then * would look like a big delete.
         private bool _applyingCoreEdit;
+        // Each click on a preview Hyperlink runs its command, so a double-click would open the
+        // page twice; OpenLink ignores the same URL again within LinkRepeatWindow.
+        private static readonly TimeSpan LinkRepeatWindow = TimeSpan.FromMilliseconds(500);
+        private string _lastOpenedUrl;
+        private DateTime _lastOpenedAt;
         private bool _isExiting;
 
         public MainWindow(ThemeManager themeManager)
@@ -78,6 +83,21 @@ namespace Scratchpad
             // positions and blocks agree between what's rendered here and what they edit.
             PreviewViewer.Pipeline = NotePipeline.Create();
             _previewNavigator = new PreviewNavigator(PreviewScrollViewer, PreviewViewer);
+            // Markdig.Wpf gives every preview Hyperlink this routed command with its URL as the
+            // parameter, and binds nothing itself. Unbound, the links are disabled; CanExecute
+            // keeps the ones NoteLinks won't open disabled.
+            CommandBindings.Add(new CommandBinding(
+                Markdig.Wpf.Commands.Hyperlink,
+                (sender, e) =>
+                {
+                    OpenLink(e.Parameter as string);
+                    e.Handled = true;
+                },
+                (sender, e) =>
+                {
+                    e.CanExecute = NoteLinks.IsOpenable(e.Parameter as string);
+                    e.Handled = true;
+                }));
 
             // Loaded here, not in Window_Loaded: by default this app starts hidden in the tray
             // (App.xaml.cs only calls Show() when "Show the window when Scratchpad starts" is
@@ -256,11 +276,39 @@ namespace Scratchpad
             }
         }
 
+        // Opens an http/https/mailto link in the default browser or mail app. Never throws: with no
+        // handler registered, or the launch refused, nothing happens.
+        private void OpenLink(string url)
+        {
+            if (!NoteLinks.IsOpenable(url))
+            {
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            if (url == _lastOpenedUrl && now - _lastOpenedAt < LinkRepeatWindow && now >= _lastOpenedAt)
+            {
+                return;
+            }
+            _lastOpenedUrl = url;
+            _lastOpenedAt = now;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true })?.Dispose();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         private void PreviewScrollViewer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // A task checkbox toggles on each click, so a double-click on one is two toggles, not
-            // a request to edit. Double-clicking the scrollbar isn't either.
-            if (IsWithin<CheckBox>(e.OriginalSource) || IsWithin<System.Windows.Controls.Primitives.ScrollBar>(e.OriginalSource))
+            // a request to edit; a link opens on the first click (OpenLink drops the second).
+            // Double-clicking the scrollbar isn't a request to edit either.
+            if (IsWithin<CheckBox>(e.OriginalSource) || IsWithin<Hyperlink>(e.OriginalSource)
+                || IsWithin<System.Windows.Controls.Primitives.ScrollBar>(e.OriginalSource))
             {
                 return;
             }
@@ -924,9 +972,16 @@ namespace Scratchpad
 
                     foreach (var inline in FindInlines(paragraph.Inlines))
                     {
-                        if (inline is Hyperlink)
+                        if (inline is Hyperlink hyperlink)
                         {
                             SetOrClearReference(inline, TextElement.ForegroundProperty, "PreviewLinkBrush", dark);
+                            // Show where the link goes, unless the note gave it a title. Also on
+                            // links that won't open (disabled), so it's clear why.
+                            if (hyperlink.ToolTip == null && hyperlink.NavigateUri != null)
+                            {
+                                hyperlink.ToolTip = hyperlink.NavigateUri.OriginalString;
+                            }
+                            ToolTipService.SetShowOnDisabled(hyperlink, true);
                         }
                         else if (inline is Run && codeStyle != null && ReferenceEquals(inline.Style, codeStyle))
                         {
