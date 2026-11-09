@@ -47,6 +47,10 @@ namespace Scratchpad
         private readonly BackupStore _backupStore = new BackupStore(BackupStore.DefaultFolder);
         // The editor text as of the last change; null until the note is loaded this session.
         private string _previousText;
+        // True while ApplyIndentEdit runs. A block indent or a wrap replaces the selection with a
+        // longer or slightly shorter version of itself, which BackupRules.RemovedLength counts as
+        // the whole selection removed: Ctrl+A then * would look like a big delete.
+        private bool _applyingCoreEdit;
         private bool _isExiting;
 
         public MainWindow(ThemeManager themeManager)
@@ -183,7 +187,7 @@ namespace Scratchpad
             var text = EditorTextBox.Text;
             // Here rather than in the autosave: it fires 500ms later, when the text from before
             // the slip (the whole point of the copy) is already gone.
-            if (_previousText != null && BackupRules.IsBigDelete(_previousText, text))
+            if (_previousText != null && !_applyingCoreEdit && BackupRules.IsBigDelete(_previousText, text))
             {
                 _backupStore.TryWriteBeforeBigDelete(_previousText, DateTime.Now);
             }
@@ -1182,16 +1186,25 @@ namespace Scratchpad
         // typed over.
         private void ApplyIndentEdit(IndentEdit edit)
         {
-            EditorTextBox.BeginChange();
+            // TextChanged fires inside EndChange, so the flag must outlive the change block.
+            _applyingCoreEdit = true;
             try
             {
-                EditorTextBox.Select(edit.ReplaceStart, edit.ReplaceLength);
-                EditorTextBox.SelectedText = edit.Replacement;
-                EditorTextBox.Select(edit.SelectionStart, edit.SelectionLength);
+                EditorTextBox.BeginChange();
+                try
+                {
+                    EditorTextBox.Select(edit.ReplaceStart, edit.ReplaceLength);
+                    EditorTextBox.SelectedText = edit.Replacement;
+                    EditorTextBox.Select(edit.SelectionStart, edit.SelectionLength);
+                }
+                finally
+                {
+                    EditorTextBox.EndChange();
+                }
             }
             finally
             {
-                EditorTextBox.EndChange();
+                _applyingCoreEdit = false;
             }
         }
 
