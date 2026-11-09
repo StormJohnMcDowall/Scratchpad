@@ -3,7 +3,8 @@ namespace Scratchpad.Core
     /// <summary>
     /// Typing a markdown emphasis character over a selection wraps the selection in it instead
     /// of replacing it, and keeps the original text selected so typing it again stacks
-    /// (<c>*</c> twice gives bold).
+    /// (<c>*</c> twice gives bold). <c>~</c> is the exception: it wraps in <c>~~</c>
+    /// (strikethrough), and a second <c>~</c> takes the <c>~~</c> off again.
     /// </summary>
     public static class SelectionWrapper
     {
@@ -41,6 +42,16 @@ namespace Scratchpad.Core
             // Strikethrough is ~~double~~ (NotePipeline), and that's all a ~ wrap could be for.
             var marker = typed == "~" ? "~~" : typed;
             var length = end - start;
+
+            // A second ~ takes the strikethrough off: stacking would make ~~~~, which at a line
+            // start opens a code fence that swallows the rest of the note.
+            if (marker == "~~" && start >= 2 && end + 2 <= text.Length
+                && string.CompareOrdinal(text, start - 2, "~~", 0, 2) == 0
+                && string.CompareOrdinal(text, end, "~~", 0, 2) == 0)
+            {
+                return new IndentEdit(start - 2, length + 4, text.Substring(start, length), start - 2, length);
+            }
+
             var inner = text.Substring(start, length);
             return new IndentEdit(start, length, marker + inner + marker, start + marker.Length, length);
         }

@@ -39,6 +39,22 @@ public class SelectionWrapperTests
         Assert.Equal("hello", Selected(text, edit));
     }
 
+    // A second ~ removes the strikethrough rather than making ~~~~, which at a line start
+    // opens a code fence and swallows the rest of the note.
+    [Theory]
+    [InlineData("say hello now", 4, 5)]
+    [InlineData("hello\nmore", 0, 5)]
+    public void Wrap_TildeTwice_TogglesStrikethroughOff(string text, int start, int length)
+    {
+        var first = SelectionWrapper.Wrap(text, start, length, "~");
+        var once = Apply(text, first);
+
+        var second = SelectionWrapper.Wrap(once, first.SelectionStart, first.SelectionLength, "~");
+
+        Assert.Equal(text, Apply(once, second));
+        Assert.Equal("hello", Selected(once, second));
+    }
+
     [Fact]
     public void Wrap_TwiceWithStar_MakesBold()
     {
