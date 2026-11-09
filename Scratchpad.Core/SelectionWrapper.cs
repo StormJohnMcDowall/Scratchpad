@@ -12,8 +12,9 @@ namespace Scratchpad.Core
         /// <summary>
         /// Returns the wrap edit, or null when the caller should let <paramref name="typed"/>
         /// type as usual: no selection, not exactly one wrap character, or a selection that is
-        /// only a line break. A trailing line break ("\n" or "\r\n", as Shift+Down leaves) is
-        /// kept outside the wrap, since <c>*abc</c> + break + <c>*</c> isn't emphasis.
+        /// only whitespace. Leading and trailing whitespace is kept outside the wrap: a
+        /// double-clicked word comes with its trailing space and Shift+Down with a line break,
+        /// and markdown doesn't treat <c>*word *</c> or <c>*abc</c> + break + <c>*</c> as emphasis.
         /// </summary>
         public static IndentEdit Wrap(string text, int selectionStart, int selectionLength, string typed)
         {
@@ -22,22 +23,24 @@ namespace Scratchpad.Core
                 return null;
             }
 
-            var length = selectionLength;
-            if (text[selectionStart + length - 1] == '\n')
+            var start = selectionStart;
+            var end = selectionStart + selectionLength;
+            while (start < end && char.IsWhiteSpace(text[start]))
             {
-                length--;
-                if (length > 0 && text[selectionStart + length - 1] == '\r')
-                {
-                    length--;
-                }
+                start++;
             }
-            if (length == 0)
+            while (end > start && char.IsWhiteSpace(text[end - 1]))
+            {
+                end--;
+            }
+            if (start == end)
             {
                 return null;
             }
 
-            var inner = text.Substring(selectionStart, length);
-            return new IndentEdit(selectionStart, length, typed + inner + typed, selectionStart + 1, length);
+            var length = end - start;
+            var inner = text.Substring(start, length);
+            return new IndentEdit(start, length, typed + inner + typed, start + 1, length);
         }
     }
 }

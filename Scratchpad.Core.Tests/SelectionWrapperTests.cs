@@ -77,6 +77,41 @@ public class SelectionWrapperTests
         Assert.Null(SelectionWrapper.Wrap(text, start, length, "*"));
     }
 
+    // Double-click and Ctrl+Shift+Right in a WPF TextBox select the word plus the space after
+    // it; "*hello *" isn't emphasis.
+    [Theory]
+    [InlineData(4, 6)]  // "hello "
+    [InlineData(3, 6)]  // " hello"
+    [InlineData(3, 7)]  // " hello "
+    public void Wrap_SurroundingSpaces_StayOutside(int start, int length)
+    {
+        var text = "say hello now";
+
+        var edit = SelectionWrapper.Wrap(text, start, length, "*");
+
+        Assert.Equal("say *hello* now", Apply(text, edit));
+        Assert.Equal("hello", Selected(text, edit));
+    }
+
+    [Fact]
+    public void Wrap_TrailingBlankLine_StaysOutside()
+    {
+        var text = "abc\n\ndef";
+
+        var edit = SelectionWrapper.Wrap(text, 0, 5, "*");
+
+        Assert.Equal("*abc*\n\ndef", Apply(text, edit));
+        Assert.Equal("abc", Selected(text, edit));
+    }
+
+    [Theory]
+    [InlineData("a   b", 1, 3)]
+    [InlineData("a \t\r\n b", 1, 5)]
+    public void Wrap_OnlyWhitespace_ReturnsNull(string text, int start, int length)
+    {
+        Assert.Null(SelectionWrapper.Wrap(text, start, length, "*"));
+    }
+
     [Fact]
     public void Wrap_MultiLineSelection_WrapsWhole()
     {
