@@ -13,13 +13,15 @@ namespace Scratchpad.Core
         /// <summary>
         /// Task lists plus ~~strikethrough~~. Only strikethrough out of the emphasis extras:
         /// the rest would turn a stray ~ ^ ++ or == in a note into subscript, superscript,
-        /// underline or highlight.
+        /// underline or highlight. Precise source locations give inlines (links) their source
+        /// spans, which NoteLinks needs; it changes no output.
         /// </summary>
         public static MarkdownPipeline Create()
         {
             return new MarkdownPipelineBuilder()
                 .UseTaskLists()
                 .UseEmphasisExtras(EmphasisExtraOptions.Strikethrough)
+                .UsePreciseSourceLocation()
                 .Build();
         }
     }
