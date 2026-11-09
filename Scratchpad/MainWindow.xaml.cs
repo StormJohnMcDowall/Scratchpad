@@ -52,10 +52,10 @@ namespace Scratchpad
         // the whole selection removed: Ctrl+A then * would look like a big delete.
         private bool _applyingCoreEdit;
         // Each click on a preview Hyperlink runs its command, so a double-click would open the
-        // page twice; OpenLink ignores the same URL again within LinkRepeatWindow.
-        private static readonly TimeSpan LinkRepeatWindow = TimeSpan.FromMilliseconds(500);
+        // page twice; OpenLink ignores the same URL again until the double-click time (at least
+        // 500ms) has passed since the last launch returned.
         private string _lastOpenedUrl;
-        private DateTime _lastOpenedAt;
+        private int _lastOpenedTicks;
         private bool _isExiting;
 
         public MainWindow(ThemeManager themeManager)
@@ -280,27 +280,39 @@ namespace Scratchpad
         // handler registered, or the launch refused, nothing happens.
         private void OpenLink(string url)
         {
-            if (!NoteLinks.IsOpenable(url))
+            // The escaped form, so a quote or space from the note can't break out of the
+            // browser's quoted argument.
+            var launchUrl = NoteLinks.LaunchUrl(url);
+            if (launchUrl == null)
             {
                 return;
             }
 
-            var now = DateTime.UtcNow;
-            if (url == _lastOpenedUrl && now - _lastOpenedAt < LinkRepeatWindow && now >= _lastOpenedAt)
+            // TickCount differences survive wrap-around and clock changes. Measured from when the
+            // last launch returned: a cold browser start can block long enough that the second
+            // click of a double-click is only handled afterwards.
+            var repeatWindow = Math.Max(500, (int)GetDoubleClickTime());
+            if (launchUrl == _lastOpenedUrl && unchecked(Environment.TickCount - _lastOpenedTicks) < repeatWindow)
             {
                 return;
             }
-            _lastOpenedUrl = url;
-            _lastOpenedAt = now;
 
             try
             {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true })?.Dispose();
+                Process.Start(new ProcessStartInfo(launchUrl) { UseShellExecute = true })?.Dispose();
             }
             catch (Exception)
             {
             }
+            finally
+            {
+                _lastOpenedUrl = launchUrl;
+                _lastOpenedTicks = Environment.TickCount;
+            }
         }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern uint GetDoubleClickTime();
 
         // Ctrl+click on a markdown link in the editor opens it. Anywhere else, the click is left
         // to the TextBox. (Ctrl+Shift+click never gets here: the window peeks first.)
@@ -559,6 +571,10 @@ namespace Scratchpad
             ApplyPreviewTheme();
             ApplyPreviewBackground();
             WireTaskListCheckBoxes();
+            // New Hyperlinks start disabled until WPF re-asks the window's CommandBinding. It
+            // usually does after the input that caused this render, but not for a render with
+            // none (e.g. starting in preview mode), where the first link click would be lost.
+            CommandManager.InvalidateRequerySuggested();
         }
 
         // Markdig.Wpf draws a fenced block as one code-style Paragraph of Runs (one per line) and

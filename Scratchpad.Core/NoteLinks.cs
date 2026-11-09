@@ -27,6 +27,16 @@ namespace Scratchpad.Core
         }
 
         /// <summary>
+        /// The string to hand the shell for an openable URL: its parsed, escaped absolute form,
+        /// so a quote or space that came from the note can't break out of the browser's quoted
+        /// argument. Null when <see cref="IsOpenable"/> is false.
+        /// </summary>
+        public static string LaunchUrl(string url)
+        {
+            return IsOpenable(url) ? new Uri(url, UriKind.Absolute).AbsoluteUri : null;
+        }
+
+        /// <summary>
         /// The URL of the link whose source (from <c>[</c> to <c>)</c>, or the whole
         /// <c>&lt;…&gt;</c> autolink) contains <paramref name="index"/>, or null. Images aren't
         /// links. Email autolinks get "mailto:" as the preview gives them.

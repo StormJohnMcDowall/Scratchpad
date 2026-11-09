@@ -28,6 +28,31 @@ public class NoteLinksTests
         Assert.False(NoteLinks.IsOpenable(url));
     }
 
+    // What actually goes to the shell: the parsed, escaped form, so a quote or space from the
+    // note can't break out of the browser's "%1" argument.
+    [Fact]
+    public void LaunchUrl_EscapesQuotesAndSpaces()
+    {
+        Assert.Equal("https://a/%22%20b", NoteLinks.LaunchUrl("https://a/\" b"));
+    }
+
+    [Theory]
+    [InlineData("https://example.com/x?y=1", "https://example.com/x?y=1")]
+    [InlineData("mailto:a@b.com", "mailto:a@b.com")]
+    public void LaunchUrl_Openable_ReturnsAbsoluteUri(string url, string expected)
+    {
+        Assert.Equal(expected, NoteLinks.LaunchUrl(url));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("foo")]
+    [InlineData("file:///c:/x.exe")]
+    public void LaunchUrl_NotOpenable_ReturnsNull(string url)
+    {
+        Assert.Null(NoteLinks.LaunchUrl(url));
+    }
+
     private const string LinkText = "see [docs](https://d.io) now";
 
     [Theory]
