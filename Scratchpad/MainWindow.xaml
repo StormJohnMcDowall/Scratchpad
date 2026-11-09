@@ -111,7 +111,8 @@
                      BorderThickness="0"
                      Padding="{StaticResource NoteTextPadding}"
                      TextChanged="EditorTextBox_TextChanged"
-                     PreviewTextInput="EditorTextBox_PreviewTextInput" />
+                     PreviewTextInput="EditorTextBox_PreviewTextInput"
+                     PreviewMouseLeftButtonDown="EditorTextBox_PreviewMouseLeftButtonDown" />
             <ScrollViewer x:Name="PreviewScrollViewer" Visibility="Collapsed" MouseDoubleClick="PreviewScrollViewer_MouseDoubleClick" PreviewMouseWheel="PreviewScrollViewer_PreviewMouseWheel" Background="{DynamicResource PostItBackgroundBrush}">
                 <!-- A margin on the viewer, not the ScrollViewer's Padding: it scrolls with the
                      content, so PreviewNavigator's extent coordinates still line up, and it sits

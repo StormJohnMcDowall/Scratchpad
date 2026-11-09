@@ -302,6 +302,29 @@ namespace Scratchpad
             }
         }
 
+        // Ctrl+click on a markdown link in the editor opens it. Anywhere else, the click is left
+        // to the TextBox. (Ctrl+Shift+click never gets here: the window peeks first.)
+        private void EditorTextBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (Keyboard.Modifiers != ModifierKeys.Control)
+            {
+                return;
+            }
+
+            var index = EditorTextBox.GetCharacterIndexFromPoint(e.GetPosition(EditorTextBox), snapToText: false);
+            if (index < 0)
+            {
+                return;
+            }
+
+            var url = NoteLinks.UrlAt(EditorTextBox.Text, index);
+            if (NoteLinks.IsOpenable(url))
+            {
+                OpenLink(url);
+                e.Handled = true;
+            }
+        }
+
         private void PreviewScrollViewer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // A task checkbox toggles on each click, so a double-click on one is two toggles, not
