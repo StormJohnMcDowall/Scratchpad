@@ -1161,11 +1161,25 @@ namespace Scratchpad
             EditorTextBox.Focus();
         }
 
-        // Replaces just the touched lines via SelectedText, which leaves the scroll position alone,
-        // then selects what LineIndenter says to. The change block opens while the user's own
-        // selection is still in place: undo restores the selection captured when the block began,
-        // so without it Ctrl+Z would leave the whole touched lines selected, one keystroke away
-        // from being typed over.
+        // Typing * _ ` or ~ over a selection wraps it (SelectionWrapper). This listens for the
+        // typed character rather than a key in Window_PreviewKeyDown: which key makes '*' depends
+        // on the keyboard layout, and the numpad has its own.
+        private void EditorTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            var edit = SelectionWrapper.Wrap(EditorTextBox.Text, EditorTextBox.SelectionStart, EditorTextBox.SelectionLength, e.Text);
+            if (edit != null)
+            {
+                ApplyIndentEdit(edit);
+                e.Handled = true;
+            }
+        }
+
+        // Applies a Core edit (block indent or selection wrap) as one undo step: replaces the range
+        // via SelectedText, which leaves the scroll position alone, then selects what the edit says
+        // to. The change block opens while the user's own selection is still in place: undo
+        // restores the selection captured when the block began, so without it Ctrl+Z would leave
+        // the edit's selection instead (whole lines, for an indent), one keystroke away from being
+        // typed over.
         private void ApplyIndentEdit(IndentEdit edit)
         {
             EditorTextBox.BeginChange();
