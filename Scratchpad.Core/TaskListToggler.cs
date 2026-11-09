@@ -7,7 +7,7 @@ namespace Scratchpad.Core
 {
     public static class TaskListToggler
     {
-        private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
+        private static readonly MarkdownPipeline Pipeline = NotePipeline.Create();
 
         /// <summary>
         /// Flips the Nth task-list checkbox (0-based, in document order) between checked and

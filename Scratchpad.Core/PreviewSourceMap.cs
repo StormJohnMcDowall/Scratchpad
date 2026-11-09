@@ -36,7 +36,7 @@ namespace Scratchpad.Core
 
     public static class PreviewSourceMap
     {
-        private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
+        private static readonly MarkdownPipeline Pipeline = NotePipeline.Create();
 
         /// <summary>
         /// Lists, in document order, the source range of every block the preview draws as a

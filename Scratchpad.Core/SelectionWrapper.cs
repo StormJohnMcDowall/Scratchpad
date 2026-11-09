@@ -38,9 +38,11 @@ namespace Scratchpad.Core
                 return null;
             }
 
+            // Strikethrough is ~~double~~ (NotePipeline), and that's all a ~ wrap could be for.
+            var marker = typed == "~" ? "~~" : typed;
             var length = end - start;
             var inner = text.Substring(start, length);
-            return new IndentEdit(start, length, typed + inner + typed, start + 1, length);
+            return new IndentEdit(start, length, marker + inner + marker, start + marker.Length, length);
         }
     }
 }

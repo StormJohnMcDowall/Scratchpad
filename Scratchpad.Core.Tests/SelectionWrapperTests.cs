@@ -17,7 +17,6 @@ public class SelectionWrapperTests
     [InlineData("*")]
     [InlineData("_")]
     [InlineData("`")]
-    [InlineData("~")]
     public void Wrap_SelectionAndWrapChar_WrapsAndKeepsTextSelected(string c)
     {
         var text = "say hello now";
@@ -25,6 +24,18 @@ public class SelectionWrapperTests
         var edit = SelectionWrapper.Wrap(text, 4, 5, c);
 
         Assert.Equal($"say {c}hello{c} now", Apply(text, edit));
+        Assert.Equal("hello", Selected(text, edit));
+    }
+
+    // Strikethrough is ~~double~~, and that's all a single ~ wrap could be for.
+    [Fact]
+    public void Wrap_Tilde_WrapsInDoubleTildes()
+    {
+        var text = "say hello now";
+
+        var edit = SelectionWrapper.Wrap(text, 4, 5, "~");
+
+        Assert.Equal("say ~~hello~~ now", Apply(text, edit));
         Assert.Equal("hello", Selected(text, edit));
     }
 

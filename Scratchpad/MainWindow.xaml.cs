@@ -74,9 +74,9 @@ namespace Scratchpad
                 _documentStore.Save(content);
                 _backupStore.TryWriteRegularIfDue(content, DateTime.Now);
             }, TimeSpan.FromMilliseconds(500));
-            // Must match Scratchpad.Core.TaskListToggler's pipeline so checkbox positions agree
-            // between what's rendered here and what gets toggled there.
-            PreviewViewer.Pipeline = new MarkdownPipelineBuilder().UseTaskLists().Build();
+            // The same pipeline TaskListToggler and PreviewSourceMap parse with, so checkbox
+            // positions and blocks agree between what's rendered here and what they edit.
+            PreviewViewer.Pipeline = NotePipeline.Create();
             _previewNavigator = new PreviewNavigator(PreviewScrollViewer, PreviewViewer);
 
             // Loaded here, not in Window_Loaded: by default this app starts hidden in the tray
