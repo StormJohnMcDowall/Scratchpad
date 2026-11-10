@@ -44,15 +44,15 @@ public class PreviewLayoutTests
 
     [Fact]
     public void TaskListLeftIndent_ScalesWithFontSize() =>
-        Assert.Equal(19, PreviewLayout.TaskListLeftIndent(10), 6);
+        Assert.Equal(14, PreviewLayout.TaskListLeftIndent(10), 6);
 
     [Fact]
     public void TaskListLeftIndent_SitsWhereTheBulletsWere()
     {
-        // Markdig.Wpf indents a list by a 40px margin and draws its bullet about 27px in, at
-        // the 14px default body size; the checkbox should start roughly where the bullet did.
+        // Measured on Windows (screenshot 2026-11-10): at the 14px default body size a bullet
+        // sits about 20px in from the text edge; the checkbox should start roughly there.
         var indent = PreviewLayout.TaskListLeftIndent(14);
-        Assert.InRange(indent, 22, 32);
+        Assert.InRange(indent, 17, 23);
     }
 
     [Fact]

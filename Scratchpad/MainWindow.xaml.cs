@@ -747,18 +747,21 @@ namespace Scratchpad
                     var itemIsTask = list.ListItems.Select(item => item.Blocks.FirstBlock is Paragraph first
                         && first.Inlines.FirstInline is InlineUIContainer container
                         && container.Child is CheckBox).ToList();
-                    // Markdig.Wpf's list style indents by Margin (40px) with zero Padding and
-                    // draws the bullet in that margin, so the indent to shrink is the margin.
                     // Marker styles other than these are numbering, which stays.
                     var isNumbered = !(list.MarkerStyle == TextMarkerStyle.Disc || list.MarkerStyle == TextMarkerStyle.Circle
                         || list.MarkerStyle == TextMarkerStyle.Square || list.MarkerStyle == TextMarkerStyle.Box
                         || list.MarkerStyle == TextMarkerStyle.None);
                     if (PreviewLayout.HidesMarkers(isNumbered, itemIsTask))
                     {
+                        // The whole indent goes in Padding and the left Margin is zeroed, so the
+                        // total is ours whichever of the two held the original indent. (A 2026-11-10
+                        // guess that it was all Margin added ours on top: checkboxes moved right.)
                         list.MarkerStyle = TextMarkerStyle.None;
                         var margin = list.Margin;
-                        list.Margin = new Thickness(PreviewLayout.TaskListLeftIndent(list.FontSize),
-                            OrZero(margin.Top), OrZero(margin.Right), OrZero(margin.Bottom));
+                        var padding = list.Padding;
+                        list.Margin = new Thickness(0, OrZero(margin.Top), OrZero(margin.Right), OrZero(margin.Bottom));
+                        list.Padding = new Thickness(PreviewLayout.TaskListLeftIndent(list.FontSize),
+                            OrZero(padding.Top), OrZero(padding.Right), OrZero(padding.Bottom));
                     }
 
                     // Nested lists are judged on their own.
