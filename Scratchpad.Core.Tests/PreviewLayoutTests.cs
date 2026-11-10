@@ -43,6 +43,27 @@ public class PreviewLayoutTests
         Assert.False(PreviewLayout.IsTaskList(new bool[0]));
 
     [Fact]
-    public void TaskListLeftPadding_ScalesWithFontSize() =>
-        Assert.Equal(8, PreviewLayout.TaskListLeftPadding(16), 6);
+    public void TaskListLeftIndent_ScalesWithFontSize() =>
+        Assert.Equal(19, PreviewLayout.TaskListLeftIndent(10), 6);
+
+    [Fact]
+    public void TaskListLeftIndent_SitsWhereTheBulletsWere()
+    {
+        // Markdig.Wpf indents a list by a 40px margin and draws its bullet about 27px in, at
+        // the 14px default body size; the checkbox should start roughly where the bullet did.
+        var indent = PreviewLayout.TaskListLeftIndent(14);
+        Assert.InRange(indent, 22, 32);
+    }
+
+    [Fact]
+    public void HidesMarkers_BulletedTaskList_True() =>
+        Assert.True(PreviewLayout.HidesMarkers(false, new[] { true, true }));
+
+    [Fact]
+    public void HidesMarkers_NumberedTaskList_KeepsNumbers() =>
+        Assert.False(PreviewLayout.HidesMarkers(true, new[] { true, true }));
+
+    [Fact]
+    public void HidesMarkers_MixedBulletedList_False() =>
+        Assert.False(PreviewLayout.HidesMarkers(false, new[] { true, false }));
 }

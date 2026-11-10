@@ -747,12 +747,18 @@ namespace Scratchpad
                     var itemIsTask = list.ListItems.Select(item => item.Blocks.FirstBlock is Paragraph first
                         && first.Inlines.FirstInline is InlineUIContainer container
                         && container.Child is CheckBox).ToList();
-                    if (PreviewLayout.IsTaskList(itemIsTask))
+                    // Markdig.Wpf's list style indents by Margin (40px) with zero Padding and
+                    // draws the bullet in that margin, so the indent to shrink is the margin.
+                    // Marker styles other than these are numbering, which stays.
+                    var isNumbered = !(list.MarkerStyle == TextMarkerStyle.Disc || list.MarkerStyle == TextMarkerStyle.Circle
+                        || list.MarkerStyle == TextMarkerStyle.Square || list.MarkerStyle == TextMarkerStyle.Box
+                        || list.MarkerStyle == TextMarkerStyle.None);
+                    if (PreviewLayout.HidesMarkers(isNumbered, itemIsTask))
                     {
                         list.MarkerStyle = TextMarkerStyle.None;
-                        var padding = list.Padding;
-                        list.Padding = new Thickness(PreviewLayout.TaskListLeftPadding(list.FontSize),
-                            OrZero(padding.Top), OrZero(padding.Right), OrZero(padding.Bottom));
+                        var margin = list.Margin;
+                        list.Margin = new Thickness(PreviewLayout.TaskListLeftIndent(list.FontSize),
+                            OrZero(margin.Top), OrZero(margin.Right), OrZero(margin.Bottom));
                     }
 
                     // Nested lists are judged on their own.

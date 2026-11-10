@@ -24,7 +24,9 @@ namespace Scratchpad.Core
     {
         public const double HeadingTopEm = 0.6;
         public const double HeadingBottomEm = 0.15;
-        public const double TaskListIndentEm = 0.5;
+        // Markdig.Wpf indents every list by a 40px left margin and draws the bullet in it, about
+        // 27px in at the 14px default size; 1.9em puts the checkbox's left edge about there.
+        public const double TaskListIndentEm = 1.9;
 
         // The note's first block gets no gap above it, so a heading at the top sits at the top.
         public static VerticalMargin HeadingMargin(double fontSize, bool isFirstBlock) =>
@@ -50,6 +52,11 @@ namespace Scratchpad.Core
             return true;
         }
 
-        public static double TaskListLeftPadding(double fontSize) => fontSize * TaskListIndentEm;
+        // Numbered lists keep their numbers even when every item is a task: the order may matter.
+        public static bool HidesMarkers(bool isNumbered, IReadOnlyList<bool> itemStartsWithCheckbox) =>
+            !isNumbered && IsTaskList(itemStartsWithCheckbox);
+
+        // The list's left margin (not padding: Markdig.Wpf's list style puts the indent there).
+        public static double TaskListLeftIndent(double fontSize) => fontSize * TaskListIndentEm;
     }
 }
