@@ -570,6 +570,7 @@ namespace Scratchpad
             ApplyPreviewFonts();
             ApplyPreviewTheme();
             ApplyPreviewBackground();
+            ApplyPreviewLayout();
             WireTaskListCheckBoxes();
             // New Hyperlinks start disabled until WPF re-asks the window's CommandBinding. It
             // usually does after the input that caused this render, but not for a render with
@@ -694,6 +695,85 @@ namespace Scratchpad
             PreviewViewer.Document.SetResourceReference(FlowDocument.BackgroundProperty, "PostItBackgroundBrush");
             PreviewViewer.Document.PagePadding = new Thickness(0);
         }
+
+        // Spacing for a sticky note rather than a document (rules in Core's PreviewLayout).
+        // Markdig.Wpf gives each heading an explicit style, so implicit styles never reach it;
+        // like the font and theme passes, this stamps local values, found by style reference.
+        // Values are recomputed from each element's font size, never from its current margin or
+        // padding, so re-running on the same document (kept for unchanged text) changes nothing.
+        private void ApplyPreviewLayout()
+        {
+            if (PreviewViewer.Document == null)
+            {
+                return;
+            }
+
+            var headingStyles = new List<Style>();
+            foreach (var key in new[]
+            {
+                Markdig.Wpf.Styles.Heading1StyleKey, Markdig.Wpf.Styles.Heading2StyleKey,
+                Markdig.Wpf.Styles.Heading3StyleKey, Markdig.Wpf.Styles.Heading4StyleKey,
+                Markdig.Wpf.Styles.Heading5StyleKey, Markdig.Wpf.Styles.Heading6StyleKey,
+            })
+            {
+                if (PreviewViewer.TryFindResource(key) is Style style)
+                {
+                    headingStyles.Add(style);
+                }
+            }
+
+            ApplyPreviewLayout(PreviewViewer.Document.Blocks, headingStyles, true);
+        }
+
+        private static void ApplyPreviewLayout(IEnumerable<Block> blocks, List<Style> headingStyles, bool isTopLevel)
+        {
+            var isFirstBlock = isTopLevel;
+            foreach (var block in blocks)
+            {
+                if (block is Paragraph paragraph && headingStyles.Any(s => ReferenceEquals(paragraph.Style, s)))
+                {
+                    var spacing = PreviewLayout.HeadingMargin(paragraph.FontSize, isFirstBlock);
+                    var old = paragraph.Margin;
+                    paragraph.Margin = new Thickness(OrZero(old.Left), spacing.Top, OrZero(old.Right), spacing.Bottom);
+                }
+                else if (block is Section section)
+                {
+                    ApplyPreviewLayout(section.Blocks, headingStyles, false);
+                }
+                else if (block is List list)
+                {
+                    // A task is an item whose first inline is the checkbox: the same rule
+                    // TaskListToggler counts by, so bullets and clicks agree on what a task is.
+                    var itemIsTask = list.ListItems.Select(item => item.Blocks.FirstBlock is Paragraph first
+                        && first.Inlines.FirstInline is InlineUIContainer container
+                        && container.Child is CheckBox).ToList();
+                    // Markdig.Wpf's list style indents by Margin (40px) with zero Padding and
+                    // draws the bullet in that margin, so the indent to shrink is the margin.
+                    // Marker styles other than these are numbering, which stays.
+                    var isNumbered = !(list.MarkerStyle == TextMarkerStyle.Disc || list.MarkerStyle == TextMarkerStyle.Circle
+                        || list.MarkerStyle == TextMarkerStyle.Square || list.MarkerStyle == TextMarkerStyle.Box
+                        || list.MarkerStyle == TextMarkerStyle.None);
+                    if (PreviewLayout.HidesMarkers(isNumbered, itemIsTask))
+                    {
+                        list.MarkerStyle = TextMarkerStyle.None;
+                        var margin = list.Margin;
+                        list.Margin = new Thickness(PreviewLayout.TaskListLeftIndent(list.FontSize),
+                            OrZero(margin.Top), OrZero(margin.Right), OrZero(margin.Bottom));
+                    }
+
+                    // Nested lists are judged on their own.
+                    foreach (var item in list.ListItems)
+                    {
+                        ApplyPreviewLayout(item.Blocks, headingStyles, false);
+                    }
+                }
+
+                isFirstBlock = false;
+            }
+        }
+
+        // WPF reports an "auto" margin or padding side as NaN.
+        private static double OrZero(double value) => double.IsNaN(value) ? 0 : value;
 
         private void AdjustFontSize(int direction)
         {
