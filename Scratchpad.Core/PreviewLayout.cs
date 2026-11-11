@@ -15,6 +15,19 @@ namespace Scratchpad.Core
         public double Bottom { get; }
     }
 
+    public readonly struct BoxPadding
+    {
+        public BoxPadding(double horizontal, double vertical)
+        {
+            Horizontal = horizontal;
+            Vertical = vertical;
+        }
+
+        public double Horizontal { get; }
+
+        public double Vertical { get; }
+    }
+
     // Spacing for the rendered preview. WPF's default paragraph spacing is about one line of the
     // paragraph's own font, so Markdig.Wpf's big headings get big gaps on both sides. These rules
     // replace that with a moderate gap above and a small one below. Every value is in ems (a
@@ -62,6 +75,13 @@ namespace Scratchpad.Core
         // Code (Consolas by default) has taller lowercase letters than the body font, so at the
         // same size it looks a size up; 0.9em makes the two look matched.
         public const double CodeEm = 0.9;
+
+        // Room between a fenced block's text and the edge of its shaded box, in the code's own size.
+        public const double CodeBlockPaddingXEm = 0.5;
+        public const double CodeBlockPaddingYEm = 0.3;
+
+        public static BoxPadding CodeBlockPadding(double codeFontSize) =>
+            new BoxPadding(codeFontSize * CodeBlockPaddingXEm, codeFontSize * CodeBlockPaddingYEm);
 
         public static double Heading1Size(double bodyFontSize) => bodyFontSize * Heading1Em;
 

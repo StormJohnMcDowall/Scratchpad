@@ -759,7 +759,11 @@ namespace Scratchpad
                     }
                     else if (isCodeBlock)
                     {
+                        // The paragraph's Background fills its padding too, so the shaded box grows
+                        // around the text rather than the text moving inside a fixed box.
                         paragraph.FontSize = PreviewLayout.CodeSize(styles.BodyFontSize);
+                        var pad = PreviewLayout.CodeBlockPadding(paragraph.FontSize);
+                        paragraph.Padding = new Thickness(pad.Horizontal, pad.Vertical, pad.Horizontal, pad.Vertical);
                     }
 
                     // Inline code is sized against its own paragraph, so code in a heading scales with it.
