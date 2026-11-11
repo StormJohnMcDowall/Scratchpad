@@ -56,10 +56,21 @@ namespace Scratchpad.Core
         public static bool HidesMarkers(bool isNumbered, IReadOnlyList<bool> itemStartsWithCheckbox) =>
             !isNumbered && IsTaskList(itemStartsWithCheckbox);
 
-        // A list straight under a heading sits on it, as the heading's small bottom gap intends.
-        // Otherwise WPF's automatic top margin (NaN, about one line) would win over that gap,
-        // since touching margins collapse to the larger. Elsewhere the list keeps its spacing.
-        public static double ListTopMargin(bool followsHeading, double currentTop) =>
+        // H1 relative to body text; Markdig.Wpf's own H1 is far bigger and dwarfs a small note.
+        public const double Heading1Em = 1.8;
+
+        // Code (Consolas by default) has taller lowercase letters than the body font, so at the
+        // same size it looks a size up; 0.9em makes the two look matched.
+        public const double CodeEm = 0.9;
+
+        public static double Heading1Size(double bodyFontSize) => bodyFontSize * Heading1Em;
+
+        public static double CodeSize(double surroundingFontSize) => surroundingFontSize * CodeEm;
+
+        // Whatever sits straight under a heading (list, paragraph, code, quote) sits on it, as the
+        // heading's small bottom gap intends. Otherwise its automatic top margin (NaN, about one
+        // line) would win, since touching margins collapse to the larger. Elsewhere: unchanged.
+        public static double TopMarginUnder(bool followsHeading, double currentTop) =>
             followsHeading ? 0 : currentTop;
 
         // The list's whole left indent (the Shell puts it in Padding and zeroes the left Margin).

@@ -68,14 +68,26 @@ public class PreviewLayoutTests
         Assert.False(PreviewLayout.HidesMarkers(false, new[] { true, false }));
 
     [Fact]
-    public void ListTopMargin_UnderHeading_IsZero() =>
-        Assert.Equal(0, PreviewLayout.ListTopMargin(true, double.NaN));
+    public void TopMarginUnder_Heading_IsZero() =>
+        Assert.Equal(0, PreviewLayout.TopMarginUnder(true, double.NaN));
 
     [Fact]
-    public void ListTopMargin_NotUnderHeading_KeepsCurrent() =>
-        Assert.Equal(12, PreviewLayout.ListTopMargin(false, 12));
+    public void TopMarginUnder_Heading_ZeroesASetMarginToo() =>
+        Assert.Equal(0, PreviewLayout.TopMarginUnder(true, 12));
 
     [Fact]
-    public void ListTopMargin_NotUnderHeading_KeepsAuto() =>
-        Assert.True(double.IsNaN(PreviewLayout.ListTopMargin(false, double.NaN)));
+    public void TopMarginUnder_NotHeading_KeepsCurrent() =>
+        Assert.Equal(12, PreviewLayout.TopMarginUnder(false, 12));
+
+    [Fact]
+    public void TopMarginUnder_NotHeading_KeepsAuto() =>
+        Assert.True(double.IsNaN(PreviewLayout.TopMarginUnder(false, double.NaN)));
+
+    [Fact]
+    public void Heading1Size_IsAboutTwiceBody() =>
+        Assert.Equal(18, PreviewLayout.Heading1Size(10), 6);
+
+    [Fact]
+    public void CodeSize_IsSlightlySmallerThanSurroundingText() =>
+        Assert.Equal(9, PreviewLayout.CodeSize(10), 6);
 }

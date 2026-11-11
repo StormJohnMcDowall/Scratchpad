@@ -696,11 +696,12 @@ namespace Scratchpad
             PreviewViewer.Document.PagePadding = new Thickness(0);
         }
 
-        // Spacing for a sticky note rather than a document (rules in Core's PreviewLayout).
-        // Markdig.Wpf gives each heading an explicit style, so implicit styles never reach it;
-        // like the font and theme passes, this stamps local values, found by style reference.
-        // Values are recomputed from each element's font size, never from its current margin or
-        // padding, so re-running on the same document (kept for unchanged text) changes nothing.
+        // Spacing and sizes for a sticky note rather than a document (rules in Core's
+        // PreviewLayout). Markdig.Wpf gives headings and code explicit styles, so implicit styles
+        // never reach them; like the font and theme passes, this stamps local values, found by
+        // style reference. Values are recomputed from the body size or each element's font size,
+        // never from the margin, padding or size this pass set before, so re-running on the same
+        // document (kept for unchanged text) changes nothing.
         private void ApplyPreviewLayout()
         {
             if (PreviewViewer.Document == null)
@@ -708,7 +709,13 @@ namespace Scratchpad
                 return;
             }
 
-            var headingStyles = new List<Style>();
+            var styles = new PreviewLayoutStyles
+            {
+                Heading1 = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.Heading1StyleKey) as Style,
+                CodeBlock = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeBlockStyleKey) as Style,
+                Code = PreviewViewer.TryFindResource(Markdig.Wpf.Styles.CodeStyleKey) as Style,
+                BodyFontSize = PreviewViewer.Document.FontSize,
+            };
             foreach (var key in new[]
             {
                 Markdig.Wpf.Styles.Heading1StyleKey, Markdig.Wpf.Styles.Heading2StyleKey,
@@ -718,30 +725,65 @@ namespace Scratchpad
             {
                 if (PreviewViewer.TryFindResource(key) is Style style)
                 {
-                    headingStyles.Add(style);
+                    styles.Headings.Add(style);
                 }
             }
 
-            ApplyPreviewLayout(PreviewViewer.Document.Blocks, headingStyles, true);
+            ApplyPreviewLayout(PreviewViewer.Document.Blocks, styles, true);
         }
 
-        private static void ApplyPreviewLayout(IEnumerable<Block> blocks, List<Style> headingStyles, bool isTopLevel)
+        private sealed class PreviewLayoutStyles
+        {
+            public readonly List<Style> Headings = new List<Style>();
+            public Style Heading1;
+            public Style CodeBlock;
+            public Style Code;
+            public double BodyFontSize;
+        }
+
+        private static void ApplyPreviewLayout(IEnumerable<Block> blocks, PreviewLayoutStyles styles, bool isTopLevel)
         {
             var isFirstBlock = isTopLevel;
             var previousIsHeading = false;
             foreach (var block in blocks)
             {
                 var paragraph = block as Paragraph;
-                var isHeading = paragraph != null && headingStyles.Any(s => ReferenceEquals(paragraph.Style, s));
-                if (isHeading)
+                var isHeading = paragraph != null && styles.Headings.Any(s => ReferenceEquals(paragraph.Style, s));
+                if (paragraph != null)
                 {
-                    var spacing = PreviewLayout.HeadingMargin(paragraph.FontSize, isFirstBlock);
-                    var old = paragraph.Margin;
-                    paragraph.Margin = new Thickness(OrZero(old.Left), spacing.Top, OrZero(old.Right), spacing.Bottom);
+                    // Sizes first: the heading margin below is measured in the heading's own size.
+                    var isCodeBlock = styles.CodeBlock != null && ReferenceEquals(paragraph.Style, styles.CodeBlock);
+                    if (styles.Heading1 != null && ReferenceEquals(paragraph.Style, styles.Heading1))
+                    {
+                        paragraph.FontSize = PreviewLayout.Heading1Size(styles.BodyFontSize);
+                    }
+                    else if (isCodeBlock)
+                    {
+                        paragraph.FontSize = PreviewLayout.CodeSize(styles.BodyFontSize);
+                    }
+
+                    // Inline code is sized against its own paragraph, so code in a heading scales with it.
+                    if (!isCodeBlock && styles.Code != null)
+                    {
+                        foreach (var run in FindRuns(paragraph.Inlines))
+                        {
+                            if (ReferenceEquals(run.Style, styles.Code))
+                            {
+                                run.FontSize = PreviewLayout.CodeSize(paragraph.FontSize);
+                            }
+                        }
+                    }
+
+                    if (isHeading)
+                    {
+                        var spacing = PreviewLayout.HeadingMargin(paragraph.FontSize, isFirstBlock);
+                        var old = paragraph.Margin;
+                        paragraph.Margin = new Thickness(OrZero(old.Left), spacing.Top, OrZero(old.Right), spacing.Bottom);
+                    }
                 }
                 else if (block is Section section)
                 {
-                    ApplyPreviewLayout(section.Blocks, headingStyles, false);
+                    ApplyPreviewLayout(section.Blocks, styles, false);
                 }
                 else if (block is List list)
                 {
@@ -767,19 +809,19 @@ namespace Scratchpad
                             OrZero(padding.Top), OrZero(padding.Right), OrZero(padding.Bottom));
                     }
 
-                    // Only lists under a heading get a local value; others keep whatever their style gives.
-                    if (previousIsHeading)
-                    {
-                        var listMargin = list.Margin;
-                        list.Margin = new Thickness(listMargin.Left,
-                            PreviewLayout.ListTopMargin(true, listMargin.Top), listMargin.Right, listMargin.Bottom);
-                    }
-
                     // Nested lists are judged on their own.
                     foreach (var item in list.ListItems)
                     {
-                        ApplyPreviewLayout(item.Blocks, headingStyles, false);
+                        ApplyPreviewLayout(item.Blocks, styles, false);
                     }
+                }
+
+                // Any non-heading block straight under a heading sits on it. Only those get a local
+                // value; everything else keeps whatever its style gives.
+                if (previousIsHeading && !isHeading)
+                {
+                    var under = block.Margin;
+                    block.Margin = new Thickness(under.Left, PreviewLayout.TopMarginUnder(true, under.Top), under.Right, under.Bottom);
                 }
 
                 isFirstBlock = false;
