@@ -1,8 +1,8 @@
 # Scratchpad
 
-A single, always-at-hand markdown note for Windows. No "which file?" — just one
-scratch file that lives in the tray, saves itself, and flips between raw markdown
-and a rendered preview.
+A markdown scratch note for Windows. There's one note, so you never have to pick a
+file. It sits in the tray, saves as you type, and switches between raw markdown and
+a rendered preview.
 
 | Edit | Preview |
 | --- | --- |
@@ -10,35 +10,34 @@ and a rendered preview.
 
 ## Features
 
-- **One note, always there** — tray icon, taskbar button, optional always-on-top, and a
-  global hotkey (Win+Shift+N by default).
-- **Autosave** — continuous atomic saves, plus local backups (hourly, on exit, and before
-  any big delete).
-- **Edit ↔ preview** (Ctrl+E) that keeps your place; double-click the preview to jump to
-  that spot in the editor.
-- **Rendered markdown** — clickable task checkboxes, links, strikethrough, and syntax
-  highlighting for C#, JSON, JS, HTML/XML and CSS code blocks.
-- **Editing helpers** — insert today's date (Ctrl+;), wrap a selection in `*` `_` `` ` `` `~`,
-  Tab / Shift+Tab to indent or outdent blocks.
-- **Peek** — slide the note out of the way for a few seconds (Ctrl+Shift+click).
-- **Make it yours** — Post-it styling with light/dark themes (follows Windows), independent
-  font families and sizes for editor and preview, configurable date format and hotkey.
+- Tray icon, taskbar button, optional always-on-top, and a global hotkey (Win+Shift+N
+  by default).
+- Saves continuously, and keeps local backups: hourly, on exit, and before a large delete.
+- Ctrl+E switches between editor and preview and keeps your place. Double-click the
+  preview to edit at that spot.
+- The preview has clickable checkboxes and links, strikethrough, and syntax
+  highlighting for C#, JSON, JavaScript, HTML/XML and CSS code blocks.
+- Ctrl+; inserts today's date. Typing `*`, `_`, `` ` `` or `~` over a selection wraps it.
+  Tab and Shift+Tab indent or outdent selected lines.
+- Peek (Ctrl+Shift+click) slides the note off screen for a few seconds.
+- Light and dark themes that follow Windows, separate fonts and sizes for the editor
+  and preview, and a configurable date format and hotkey.
 
 The note is stored at `%LOCALAPPDATA%\Scratchpad\scratchpad.md`, with settings and
-backups alongside it.
+backups in the same folder.
 
 ## Building
 
-Requires the .NET 10 SDK and, to run the app, Windows with .NET Framework 4.8.
+You need the .NET 10 SDK to build, and Windows with .NET Framework 4.8 to run it.
 
 ```powershell
 dotnet build Scratchpad.sln -c Release
 dotnet test Scratchpad.Core.Tests
 ```
 
-The app is `Scratchpad\bin\Release\net48\Scratchpad.exe` — no installer, no admin rights
-needed. Copy the folder wherever you like and run it once; it registers itself to start
-at sign-in (per-user, `HKCU\...\Run`).
+The app is `Scratchpad\bin\Release\net48\Scratchpad.exe`. There's no installer and it
+doesn't need admin rights. Copy the folder wherever you like and run it once. It adds
+itself to your per-user startup list (`HKCU\...\Run`) so it starts when you sign in.
 
-`Scratchpad.Core` (netstandard2.0) holds all the testable logic and builds on any platform;
-the WPF shell in `Scratchpad` targets `net48` and only runs on Windows.
+`Scratchpad.Core` (netstandard2.0) holds the logic and the tests cover it. It builds on
+any platform. The WPF app in `Scratchpad` targets `net48` and only runs on Windows.
