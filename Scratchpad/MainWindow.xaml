@@ -91,7 +91,7 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal">
                 <ToggleButton x:Name="PreviewToggleButton" Content="&#xE890;" Click="PreviewToggleButton_Click" ToolTip="Preview (Ctrl+E)" AutomationProperties.Name="Preview" />
                 <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="&#xE718;" Click="AlwaysOnTopToggleButton_Click" ToolTip="Always on top (Ctrl+T)" AutomationProperties.Name="Always on top" />
-                <Button x:Name="PeekButton" Content="&#xED1A;" Click="PeekButton_Click" Focusable="False" ToolTip="Peek behind (Ctrl+Shift+click)" AutomationProperties.Name="Peek behind" />
+                <Button x:Name="PeekButton" Content="&#xE81E;" Click="PeekButton_Click" Focusable="False" ToolTip="Peek behind (Ctrl+Shift+click)" AutomationProperties.Name="Peek behind" />
                 <Button x:Name="DateButton" Content="&#xE787;" Click="DateButton_Click" Focusable="False" ToolTip="Insert today's date (Ctrl+;)" AutomationProperties.Name="Insert date" />
                 <Border Width="1" Margin="4,6" Background="{DynamicResource PostItBorderBrush}" />
                 <Button x:Name="ZoomOutButton" Content="&#xE8E7;" Click="ZoomOutButton_Click" Focusable="False" ToolTip="Smaller text (Ctrl+-)" AutomationProperties.Name="Smaller text" />
