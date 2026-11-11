@@ -4,3 +4,6 @@ obj/
 .vs/
 .superpowers/
 .claude/settings.local.json
+
+# Local scratch files (screenshots, samples)
+not_commited/
