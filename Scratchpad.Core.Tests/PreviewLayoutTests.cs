@@ -66,4 +66,16 @@ public class PreviewLayoutTests
     [Fact]
     public void HidesMarkers_MixedBulletedList_False() =>
         Assert.False(PreviewLayout.HidesMarkers(false, new[] { true, false }));
+
+    [Fact]
+    public void ListTopMargin_UnderHeading_IsZero() =>
+        Assert.Equal(0, PreviewLayout.ListTopMargin(true, double.NaN));
+
+    [Fact]
+    public void ListTopMargin_NotUnderHeading_KeepsCurrent() =>
+        Assert.Equal(12, PreviewLayout.ListTopMargin(false, 12));
+
+    [Fact]
+    public void ListTopMargin_NotUnderHeading_KeepsAuto() =>
+        Assert.True(double.IsNaN(PreviewLayout.ListTopMargin(false, double.NaN)));
 }
