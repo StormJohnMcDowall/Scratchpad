@@ -728,9 +728,12 @@ namespace Scratchpad
         private static void ApplyPreviewLayout(IEnumerable<Block> blocks, List<Style> headingStyles, bool isTopLevel)
         {
             var isFirstBlock = isTopLevel;
+            var previousIsHeading = false;
             foreach (var block in blocks)
             {
-                if (block is Paragraph paragraph && headingStyles.Any(s => ReferenceEquals(paragraph.Style, s)))
+                var paragraph = block as Paragraph;
+                var isHeading = paragraph != null && headingStyles.Any(s => ReferenceEquals(paragraph.Style, s));
+                if (isHeading)
                 {
                     var spacing = PreviewLayout.HeadingMargin(paragraph.FontSize, isFirstBlock);
                     var old = paragraph.Margin;
@@ -764,6 +767,14 @@ namespace Scratchpad
                             OrZero(padding.Top), OrZero(padding.Right), OrZero(padding.Bottom));
                     }
 
+                    // Only lists under a heading get a local value; others keep whatever their style gives.
+                    if (previousIsHeading)
+                    {
+                        var listMargin = list.Margin;
+                        list.Margin = new Thickness(listMargin.Left,
+                            PreviewLayout.ListTopMargin(true, listMargin.Top), listMargin.Right, listMargin.Bottom);
+                    }
+
                     // Nested lists are judged on their own.
                     foreach (var item in list.ListItems)
                     {
@@ -772,6 +783,7 @@ namespace Scratchpad
                 }
 
                 isFirstBlock = false;
+                previousIsHeading = isHeading;
             }
         }
 

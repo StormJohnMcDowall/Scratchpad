@@ -56,6 +56,12 @@ namespace Scratchpad.Core
         public static bool HidesMarkers(bool isNumbered, IReadOnlyList<bool> itemStartsWithCheckbox) =>
             !isNumbered && IsTaskList(itemStartsWithCheckbox);
 
+        // A list straight under a heading sits on it, as the heading's small bottom gap intends.
+        // Otherwise WPF's automatic top margin (NaN, about one line) would win over that gap,
+        // since touching margins collapse to the larger. Elsewhere the list keeps its spacing.
+        public static double ListTopMargin(bool followsHeading, double currentTop) =>
+            followsHeading ? 0 : currentTop;
+
         // The list's whole left indent (the Shell puts it in Padding and zeroes the left Margin).
         public static double TaskListLeftIndent(double fontSize) => fontSize * TaskListIndentEm;
     }
