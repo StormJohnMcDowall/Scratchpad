@@ -90,4 +90,12 @@ public class PreviewLayoutTests
     [Fact]
     public void CodeSize_IsSlightlySmallerThanSurroundingText() =>
         Assert.Equal(9, PreviewLayout.CodeSize(10), 6);
+
+    [Fact]
+    public void CodeBlockPadding_ScalesWithCodeSize()
+    {
+        var pad = PreviewLayout.CodeBlockPadding(10);
+        Assert.Equal(5, pad.Horizontal, 6);
+        Assert.Equal(3, pad.Vertical, 6);
+    }
 }
